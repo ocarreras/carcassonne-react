@@ -84,54 +84,50 @@ const Board = ({ gameState, possiblePlacements, onTilePlaced, currentTile }) => 
   const renderTiles = () => {
     if (!board) return null;
 
-    const tiles = [];
+    // Create a container for all tiles that will be transformed as a whole
+    return (
+      <div style={{
+        position: 'absolute',
+        transform: `scale(${scale})`,
+        transformOrigin: '0 0',
+        left: `${position.x}px`,
+        top: `${position.y}px`
+      }}>
+        {/* Render placed tiles */}
+        {board.map((row, y) => 
+          row.map((tile, x) => {
+            if (tile) {
+              return (
+                <Tile
+                  key={`${x}-${y}`}
+                  type={tile.type}
+                  rotation={tile.rotation || 0}
+                  x={(x - center) * 100}
+                  y={(y - center) * 100}
+                  meeple={tile.meeple}
+                  scale={1} // Scale is handled by the container
+                />
+              );
+            }
+            return null;
+          })
+        )}
 
-    for (let y = 0; y < board.length; y++) {
-      for (let x = 0; x < board[y].length; x++) {
-        const tile = board[y][x];
-        if (tile) {
-          // Calculate position based on center, scale, and position
-          const tileX = ((x - center) * 100 * scale) + position.x;
-          const tileY = ((y - center) * 100 * scale) + position.y;
-          
-          tiles.push(
-            <Tile
-              key={`${x}-${y}`}
-              type={tile.type}
-              rotation={tile.rotation || 0}
-              x={tileX / scale}
-              y={tileY / scale}
-              meeple={tile.meeple}
-              scale={scale}
-            />
-          );
-        }
-      }
-    }
-
-    // Render possible placements for the current tile
-    if (possiblePlacements && currentTile) {
-      possiblePlacements.forEach(({ x, y, rotation }) => {
-        // Calculate position based on center, scale, and position
-        const tileX = ((x - center) * 100 * scale) + position.x;
-        const tileY = ((y - center) * 100 * scale) + position.y;
-        
-        tiles.push(
+        {/* Render possible placements */}
+        {possiblePlacements && currentTile && possiblePlacements.map(({ x, y, rotation }) => (
           <Tile
             key={`placement-${x}-${y}-${rotation}`}
             type={currentTile}
             rotation={rotation}
-            x={tileX / scale}
-            y={tileY / scale}
+            x={(x - center) * 100}
+            y={(y - center) * 100}
             isHighlighted={true}
             onClick={() => handleTileClick(x, y, rotation)}
-            scale={scale}
+            scale={1} // Scale is handled by the container
           />
-        );
-      });
-    }
-
-    return tiles;
+        ))}
+      </div>
+    );
   };
 
   // Render minimap
