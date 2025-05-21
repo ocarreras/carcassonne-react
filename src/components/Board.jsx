@@ -26,6 +26,10 @@ const Board = ({ gameState, possiblePlacements, onTilePlaced, currentTile }) => 
     }
   }, []);
 
+  // Track touch points for pinch-to-zoom
+  const [initialPinchDistance, setInitialPinchDistance] = useState(null);
+  const [initialScale, setInitialScale] = useState(1);
+
   // Handle mouse down for dragging
   const handleMouseDown = (e) => {
     setIsDragging(true);
@@ -72,6 +76,102 @@ const Board = ({ gameState, possiblePlacements, onTilePlaced, currentTile }) => 
     
     setScale(newScale);
     setPosition(newPosition);
+  };
+
+  // Calculate distance between two touch points
+  const getTouchDistance = (touches) => {
+    if (touches.length < 2) return 0;
+    
+    const dx = touches[0].clientX - touches[1].clientX;
+    const dy = touches[0].clientY - touches[1].clientY;
+    return Math.sqrt(dx * dx + dy * dy);
+  };
+
+  // Get center point between two touches
+  const getTouchCenter = (touches) => {
+    if (touches.length < 2) {
+      return { x: touches[0].clientX, y: touches[0].clientY };
+    }
+    
+    return {
+      x: (touches[0].clientX + touches[1].clientX) / 2,
+      y: (touches[0].clientY + touches[1].clientY) / 2
+    };
+  };
+
+  // Handle touch start
+  const handleTouchStart = (e) => {
+    e.preventDefault(); // Prevent default touch behavior
+    
+    const touches = Array.from(e.touches);
+    
+    if (touches.length === 1) {
+      // Single touch - start dragging
+      setIsDragging(true);
+      setDragStart({ x: touches[0].clientX, y: touches[0].clientY });
+    } else if (touches.length === 2) {
+      // Two touches - start pinch zoom
+      setInitialPinchDistance(getTouchDistance(touches));
+      setInitialScale(scale);
+    }
+  };
+
+  // Handle touch move
+  const handleTouchMove = (e) => {
+    e.preventDefault(); // Prevent default touch behavior
+    
+    const touches = Array.from(e.touches);
+    
+    if (touches.length === 1 && isDragging) {
+      // Single touch - dragging
+      const dx = touches[0].clientX - dragStart.x;
+      const dy = touches[0].clientY - dragStart.y;
+      
+      setPosition({
+        x: position.x + dx,
+        y: position.y + dy
+      });
+      
+      setDragStart({ x: touches[0].clientX, y: touches[0].clientY });
+    } else if (touches.length === 2 && initialPinchDistance) {
+      // Two touches - pinch zoom
+      const currentDistance = getTouchDistance(touches);
+      const pinchRatio = currentDistance / initialPinchDistance;
+      const newScale = Math.max(0.5, Math.min(3, initialScale * pinchRatio));
+      
+      // Calculate zoom center (center between touch points)
+      const rect = boardRef.current.getBoundingClientRect();
+      const touchCenter = getTouchCenter(touches);
+      const centerX = touchCenter.x - rect.left;
+      const centerY = touchCenter.y - rect.top;
+      
+      // Calculate new position to zoom towards center
+      const newPosition = {
+        x: centerX - (centerX - position.x) * (newScale / scale),
+        y: centerY - (centerY - position.y) * (newScale / scale)
+      };
+      
+      setScale(newScale);
+      setPosition(newPosition);
+    }
+  };
+
+  // Handle touch end
+  const handleTouchEnd = (e) => {
+    e.preventDefault(); // Prevent default touch behavior
+    
+    const touches = Array.from(e.touches);
+    
+    if (touches.length === 0) {
+      // All touches ended
+      setIsDragging(false);
+      setInitialPinchDistance(null);
+    } else if (touches.length === 1) {
+      // Back to one touch - reset for dragging
+      setIsDragging(true);
+      setDragStart({ x: touches[0].clientX, y: touches[0].clientY });
+      setInitialPinchDistance(null);
+    }
   };
 
   // Handle tile click
@@ -199,13 +299,17 @@ const Board = ({ gameState, possiblePlacements, onTilePlaced, currentTile }) => 
         position: 'relative',
         backgroundColor: '#f0e6d2',
         border: '1px solid #ccc',
-        cursor: isDragging ? 'grabbing' : 'grab'
+        cursor: isDragging ? 'grabbing' : 'grab',
+        touchAction: 'none' // Prevent browser's default touch behavior
       }}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
       onWheel={handleWheel}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
       ref={boardRef}
     >
       <div
