@@ -9,14 +9,11 @@ const Board = ({ gameState, possiblePlacements, onTilePlaced, currentTile }) => 
   const [scale, setScale] = useState(1);
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-  const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 });
-  
 
-  // Initialize viewport size and center the first tile
+  // Initialize and center the first tile
   useEffect(() => {
     if (boardRef.current) {
       const { clientWidth, clientHeight } = boardRef.current.parentElement;
-      setViewportSize({ width: clientWidth, height: clientHeight });
       
       // Center the first tile
       setPosition({
@@ -230,66 +227,6 @@ const Board = ({ gameState, possiblePlacements, onTilePlaced, currentTile }) => 
     );
   };
 
-  // Render minimap
-  const renderMinimap = () => {
-    const minimapSize = 150;
-    const minimapScale = 0.1;
-    
-    return (
-      <div style={{
-        position: 'absolute',
-        bottom: 10,
-        right: 10,
-        width: minimapSize,
-        height: minimapSize,
-        backgroundColor: 'rgba(255, 255, 255, 0.8)',
-        border: '1px solid #ccc',
-        borderRadius: '5px',
-        overflow: 'hidden',
-        zIndex: 10
-      }}>
-        <div style={{
-          position: 'relative',
-          transform: `scale(${minimapScale})`,
-          transformOrigin: 'top left'
-        }}>
-          {board && board.map((row, y) => 
-            row.map((tile, x) => {
-              if (tile) {
-                return (
-                  <div
-                    key={`minimap-${x}-${y}`}
-                    style={{
-                      position: 'absolute',
-                      left: (x - center) * 100,
-                      top: (y - center) * 100,
-                      width: 100,
-                      height: 100,
-                      backgroundColor: '#4a6c6f',
-                      border: '1px solid #333'
-                    }}
-                  />
-                );
-              }
-              return null;
-            })
-          )}
-          
-          {/* Viewport indicator */}
-          <div style={{
-            position: 'absolute',
-            left: (position.x - viewportSize.width / 2) / scale / minimapScale,
-            top: (position.y - viewportSize.height / 2) / scale / minimapScale,
-            width: viewportSize.width / scale / minimapScale,
-            height: viewportSize.height / scale / minimapScale,
-            border: '2px solid red',
-            backgroundColor: 'rgba(255, 0, 0, 0.1)'
-          }} />
-        </div>
-      </div>
-    );
-  };
-
   return (
     <div
       style={{
@@ -323,7 +260,6 @@ const Board = ({ gameState, possiblePlacements, onTilePlaced, currentTile }) => 
       >
         {renderTiles()}
       </div>
-      {renderMinimap()}
     </div>
   );
 };
