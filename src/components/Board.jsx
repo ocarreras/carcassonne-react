@@ -9,7 +9,8 @@ const Board = ({
   onSelectedTileClick,
   selectedPosition,
   currentRotation,
-  currentTile 
+  currentTile,
+  onConfirmPlacement
 }) => {
   const { board, center } = gameState;
   const boardRef = useRef(null);
@@ -222,7 +223,9 @@ const Board = ({
                   x={(x - center) * 100}
                   y={(y - center) * 100}
                   onClick={() => isSelected ? onSelectedTileClick() : onEmptyTileClick(x, y)}
+                  onConfirm={onConfirmPlacement}
                   scale={1} // Scale is handled by the container
+                  isSelected={isSelected}
                 />
               );
             }
@@ -291,7 +294,8 @@ Board.propTypes = {
     y: PropTypes.number.isRequired
   }),
   currentRotation: PropTypes.number.isRequired,
-  currentTile: PropTypes.string
+  currentTile: PropTypes.string,
+  onConfirmPlacement: PropTypes.func.isRequired
 };
 
 export default Board;

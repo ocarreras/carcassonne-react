@@ -207,35 +207,11 @@ const Game = () => {
           <div style={{ 
             width: '80px', 
             height: '80px',
-            position: 'relative',
+            backgroundImage: `url(/base_game/${gameState.currentTile}.png)`,
+            backgroundSize: 'cover',
             border: '2px solid #4a6c6f',
             borderRadius: '5px'
-          }}>
-            <div style={{
-              width: '100%',
-              height: '100%',
-              backgroundImage: `url(/base_game/${gameState.currentTile}.png)`,
-              backgroundSize: 'cover'
-            }} />
-            <div 
-              onClick={handleConfirmPlacement}
-              onTouchStart={(e) => {
-                e.preventDefault();
-                handleConfirmPlacement();
-              }}
-              style={{
-                position: 'absolute',
-                top: '5px',
-                right: '5px',
-                width: '20px',
-                height: '20px',
-                backgroundImage: 'url(/icon-accept-48.png)',
-                backgroundSize: 'cover',
-                cursor: 'pointer',
-                display: selectedPosition ? 'block' : 'none'
-              }}
-            />
-          </div>
+          }} />
         </div>
         <div>
           <p style={{ margin: '0', fontSize: '0.9rem' }}>
@@ -281,6 +257,7 @@ const Game = () => {
         selectedPosition={selectedPosition}
         currentRotation={currentRotation}
         currentTile={gameState.currentTile}
+        onConfirmPlacement={handleConfirmPlacement}
       />
       
       {gamePhase === 'MEEPLE_PLACEMENT' && (
