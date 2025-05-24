@@ -7,7 +7,8 @@ import {
   findPossiblePlacements, 
   placeTile, 
   placeMeeple,
-  MEEPLE_TYPES
+  MEEPLE_TYPES,
+  getValidRotations
 } from '../utils/gameLogic';
 
 const Game = () => {
@@ -16,6 +17,9 @@ const Game = () => {
   const [gamePhase, setGamePhase] = useState('PLAYER_TURN'); // PLAYER_TURN, MEEPLE_PLACEMENT, COMPUTER_TURN
   const [lastPlacedTile, setLastPlacedTile] = useState(null);
   const [availableMeepleTypes, setAvailableMeepleTypes] = useState([]);
+  const [selectedPosition, setSelectedPosition] = useState(null); // { x, y }
+  const [currentRotation, setCurrentRotation] = useState(0);
+  const [validRotations, setValidRotations] = useState([]);
 
   // Initialize the game
   useEffect(() => {
@@ -35,14 +39,38 @@ const Game = () => {
     }
   }, [gameState, gamePhase]);
 
-  // Handle tile placement
-  const handleTilePlaced = (x, y, rotation) => {
+  // Handle empty tile click
+  const handleEmptyTileClick = (x, y) => {
     if (gamePhase !== 'PLAYER_TURN') return;
 
+    // Get valid rotations for this position
+    const validRots = getValidRotations(gameState.board, x, y, TILES[gameState.currentTile]);
+    
+    if (validRots.length > 0) {
+      setSelectedPosition({ x, y });
+      setCurrentRotation(validRots[0]); // Start with first valid rotation
+      setValidRotations(validRots);
+    }
+  };
+
+  // Handle selected tile click (for rotation)
+  const handleSelectedTileClick = () => {
+    if (!selectedPosition || validRotations.length === 0) return;
+
+    // Find next valid rotation
+    const currentIndex = validRotations.indexOf(currentRotation);
+    const nextIndex = (currentIndex + 1) % validRotations.length;
+    setCurrentRotation(validRotations[nextIndex]);
+  };
+
+  // Handle confirm placement
+  const handleConfirmPlacement = () => {
+    if (!selectedPosition || gamePhase !== 'PLAYER_TURN') return;
+
     const currentTileType = gameState.currentTile;
-    const newGameState = placeTile(gameState, x, y, currentTileType, rotation);
+    const newGameState = placeTile(gameState, selectedPosition.x, selectedPosition.y, currentTileType, currentRotation);
     setGameState(newGameState);
-    setLastPlacedTile({ x, y });
+    setLastPlacedTile(selectedPosition);
     
     // Determine available meeple types for this tile
     const tile = TILES[currentTileType];
@@ -55,6 +83,11 @@ const Game = () => {
     
     setAvailableMeepleTypes(meepleTypes);
     setGamePhase('MEEPLE_PLACEMENT');
+    
+    // Reset selection states
+    setSelectedPosition(null);
+    setCurrentRotation(0);
+    setValidRotations([]);
   };
 
   // Handle meeple placement
@@ -173,12 +206,32 @@ const Game = () => {
           <h3 style={{ margin: '0 0 5px 0' }}>Current Tile:</h3>
           <div style={{ 
             width: '80px', 
-            height: '80px', 
-            backgroundImage: `url(/base_game/${gameState.currentTile}.png)`,
-            backgroundSize: 'cover',
+            height: '80px',
+            position: 'relative',
             border: '2px solid #4a6c6f',
             borderRadius: '5px'
-          }} />
+          }}>
+            <div style={{
+              width: '100%',
+              height: '100%',
+              backgroundImage: `url(/base_game/${gameState.currentTile}.png)`,
+              backgroundSize: 'cover'
+            }} />
+            <div 
+              onClick={handleConfirmPlacement}
+              style={{
+                position: 'absolute',
+                top: '5px',
+                right: '5px',
+                width: '20px',
+                height: '20px',
+                backgroundImage: 'url(/icon-accept-48.png)',
+                backgroundSize: 'cover',
+                cursor: 'pointer',
+                display: selectedPosition ? 'block' : 'none'
+              }}
+            />
+          </div>
         </div>
         <div>
           <p style={{ margin: '0', fontSize: '0.9rem' }}>
@@ -219,7 +272,10 @@ const Game = () => {
       <Board 
         gameState={gameState}
         possiblePlacements={gamePhase === 'PLAYER_TURN' ? possiblePlacements : []}
-        onTilePlaced={handleTilePlaced}
+        onEmptyTileClick={handleEmptyTileClick}
+        onSelectedTileClick={handleSelectedTileClick}
+        selectedPosition={selectedPosition}
+        currentRotation={currentRotation}
         currentTile={gameState.currentTile}
       />
       

@@ -100,9 +100,16 @@ export const canPlaceTile = (board, x, y, tile) => {
   return true;
 };
 
+// Function to get valid rotations for a position
+export const getValidRotations = (board, x, y, tile) => {
+  return [0, 1, 2, 3].filter(rotation => 
+    canPlaceTile(board, x, y, rotateTile(tile, rotation))
+  );
+};
+
 // Function to find all possible placements for a tile
 export const findPossiblePlacements = (board, tile) => {
-  const possiblePlacements = [];
+  const possiblePlacements = new Set();
   const boardSize = 100; // Assuming a large enough board
   
   // Check all positions around existing tiles
@@ -112,13 +119,16 @@ export const findPossiblePlacements = (board, tile) => {
       for (let rotation = 0; rotation < 4; rotation++) {
         const rotatedTile = rotateTile(tile, rotation);
         if (canPlaceTile(board, x, y, rotatedTile)) {
-          possiblePlacements.push({ x, y, rotation });
+          // Only store unique positions
+          possiblePlacements.add(JSON.stringify({ x, y }));
+          break; // Found a valid rotation, no need to check others for this position
         }
       }
     }
   }
   
-  return possiblePlacements;
+  // Convert back to array of objects
+  return Array.from(possiblePlacements).map(pos => JSON.parse(pos));
 };
 
 // Function to initialize the game board with the initial tile

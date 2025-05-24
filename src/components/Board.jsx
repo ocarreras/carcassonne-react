@@ -2,7 +2,15 @@ import React, { useRef, useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import Tile from './Tile';
 
-const Board = ({ gameState, possiblePlacements, onTilePlaced, currentTile }) => {
+const Board = ({ 
+  gameState, 
+  possiblePlacements, 
+  onEmptyTileClick, 
+  onSelectedTileClick,
+  selectedPosition,
+  currentRotation,
+  currentTile 
+}) => {
   const { board, center } = gameState;
   const boardRef = useRef(null);
   const [position, setPosition] = useState({ x: 0, y: 0 });
@@ -171,12 +179,6 @@ const Board = ({ gameState, possiblePlacements, onTilePlaced, currentTile }) => 
     }
   };
 
-  // Handle tile click
-  const handleTileClick = (x, y, rotation) => {
-    // Convert screen coordinates to board coordinates
-    onTilePlaced(x, y, rotation);
-  };
-
   // Render tiles
   const renderTiles = () => {
     if (!board) return null;
@@ -190,10 +192,15 @@ const Board = ({ gameState, possiblePlacements, onTilePlaced, currentTile }) => 
         left: `${position.x}px`,
         top: `${position.y}px`
       }}>
-        {/* Render placed tiles */}
+        {/* Render placed tiles and possible placements */}
         {board.map((row, y) => 
           row.map((tile, x) => {
+            // Check if this position is a possible placement
+            const isPossiblePlacement = possiblePlacements?.some(p => p.x === x && p.y === y);
+            const isSelected = selectedPosition && selectedPosition.x === x && selectedPosition.y === y;
+
             if (tile) {
+              // Render placed tile
               return (
                 <Tile
                   key={`${x}-${y}`}
@@ -205,24 +212,23 @@ const Board = ({ gameState, possiblePlacements, onTilePlaced, currentTile }) => 
                   scale={1} // Scale is handled by the container
                 />
               );
+            } else if (isPossiblePlacement) {
+              // Render empty tile or selected tile
+              return (
+                <Tile
+                  key={`placement-${x}-${y}`}
+                  type={isSelected ? currentTile : 'Empty'}
+                  rotation={isSelected ? currentRotation : 0}
+                  x={(x - center) * 100}
+                  y={(y - center) * 100}
+                  onClick={() => isSelected ? onSelectedTileClick() : onEmptyTileClick(x, y)}
+                  scale={1} // Scale is handled by the container
+                />
+              );
             }
             return null;
           })
         )}
-
-        {/* Render possible placements */}
-        {possiblePlacements && currentTile && possiblePlacements.map(({ x, y, rotation }) => (
-          <Tile
-            key={`placement-${x}-${y}-${rotation}`}
-            type={currentTile}
-            rotation={rotation}
-            x={(x - center) * 100}
-            y={(y - center) * 100}
-            isHighlighted={true}
-            onClick={() => handleTileClick(x, y, rotation)}
-            scale={1} // Scale is handled by the container
-          />
-        ))}
       </div>
     );
   };
@@ -278,7 +284,13 @@ Board.propTypes = {
       rotation: PropTypes.number.isRequired
     })
   ),
-  onTilePlaced: PropTypes.func.isRequired,
+  onEmptyTileClick: PropTypes.func.isRequired,
+  onSelectedTileClick: PropTypes.func.isRequired,
+  selectedPosition: PropTypes.shape({
+    x: PropTypes.number.isRequired,
+    y: PropTypes.number.isRequired
+  }),
+  currentRotation: PropTypes.number.isRequired,
   currentTile: PropTypes.string
 };
 
