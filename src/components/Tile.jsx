@@ -7,7 +7,7 @@ const Tile = ({ type, rotation = 0, x, y, isHighlighted, onClick, meeple, scale 
   const tileStyle = {
     width: `${tileSize}px`,
     height: `${tileSize}px`,
-    backgroundImage: `url(/base_game/${type}.png)`,
+    backgroundImage: type === 'Empty' ? 'url(/Empty.png)' : `url(/base_game/${type}.png)`,
     backgroundSize: 'cover',
     transform: `rotate(${rotation * 90}deg)`,
     position: 'absolute',
@@ -31,10 +31,18 @@ const Tile = ({ type, rotation = 0, x, y, isHighlighted, onClick, meeple, scale 
     zIndex: 2
   } : null;
 
+  const handleTouchStart = (e) => {
+    e.preventDefault(); // Prevent default touch behavior
+    if (onClick) {
+      onClick();
+    }
+  };
+
   return (
     <div 
       style={tileStyle} 
       onClick={onClick}
+      onTouchStart={handleTouchStart}
       data-testid={`tile-${type}-${x}-${y}`}
     >
       {meeple && <div style={meepleStyle} />}

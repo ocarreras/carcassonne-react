@@ -219,6 +219,10 @@ const Game = () => {
             }} />
             <div 
               onClick={handleConfirmPlacement}
+              onTouchStart={(e) => {
+                e.preventDefault();
+                handleConfirmPlacement();
+              }}
               style={{
                 position: 'absolute',
                 top: '5px',

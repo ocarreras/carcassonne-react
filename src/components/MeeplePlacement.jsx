@@ -55,6 +55,10 @@ const MeeplePlacement = ({ onMeeplePlaced, onSkip, availableTypes }) => {
               backgroundColor: getMeepleTypeColor(type)
             }}
             onClick={() => onMeeplePlaced(type)}
+            onTouchStart={(e) => {
+              e.preventDefault();
+              onMeeplePlaced(type);
+            }}
           >
             {formatMeepleType(type)}
           </button>
@@ -65,6 +69,10 @@ const MeeplePlacement = ({ onMeeplePlaced, onSkip, availableTypes }) => {
             backgroundColor: '#999'
           }}
           onClick={onSkip}
+          onTouchStart={(e) => {
+            e.preventDefault();
+            onSkip();
+          }}
         >
           Skip
         </button>
