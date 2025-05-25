@@ -10,7 +10,13 @@ const Board = ({
   selectedPosition,
   currentRotation,
   currentTile,
-  onConfirmPlacement
+  onConfirmPlacement,
+  meeplePlacementMode,
+  meeplePlacementTile,
+  selectedMeepleSpot,
+  onMeepleSpotClick,
+  onMeepleConfirm,
+  onMeepleCancel
 }) => {
   const { board, center } = gameState;
   const boardRef = useRef(null);
@@ -199,6 +205,7 @@ const Board = ({
             // Check if this position is a possible placement
             const isPossiblePlacement = possiblePlacements?.some(p => p.x === x && p.y === y);
             const isSelected = selectedPosition && selectedPosition.x === x && selectedPosition.y === y;
+            const isMeeplePlacementTile = meeplePlacementTile && meeplePlacementTile.x === x && meeplePlacementTile.y === y;
 
             if (tile) {
               // Render placed tile
@@ -211,6 +218,11 @@ const Board = ({
                   y={(y - center) * 100}
                   meeple={tile.meeple}
                   scale={1} // Scale is handled by the container
+                  meeplePlacementMode={isMeeplePlacementTile && meeplePlacementMode}
+                  selectedMeepleSpot={isMeeplePlacementTile ? selectedMeepleSpot : -1}
+                  onMeepleSpotClick={onMeepleSpotClick}
+                  onMeepleConfirm={onMeepleConfirm}
+                  onMeepleCancel={onMeepleCancel}
                 />
               );
             } else if (isPossiblePlacement) {
@@ -294,7 +306,18 @@ Board.propTypes = {
   }),
   currentRotation: PropTypes.number.isRequired,
   currentTile: PropTypes.string,
-  onConfirmPlacement: PropTypes.func.isRequired
+  onConfirmPlacement: PropTypes.func.isRequired,
+  meeplePlacementMode: PropTypes.bool,
+  meeplePlacementTile: PropTypes.shape({
+    x: PropTypes.number.isRequired,
+    y: PropTypes.number.isRequired,
+    rotation: PropTypes.number.isRequired,
+    tileType: PropTypes.string.isRequired
+  }),
+  selectedMeepleSpot: PropTypes.number,
+  onMeepleSpotClick: PropTypes.func,
+  onMeepleConfirm: PropTypes.func,
+  onMeepleCancel: PropTypes.func
 };
 
 export default Board;

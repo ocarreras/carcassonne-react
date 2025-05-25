@@ -169,11 +169,180 @@ export const placeTile = (gameState, x, y, tileType, rotation = 0) => {
 };
 
 // Meeple placement types
+export const MEEPLE_PLACEMENT_TYPES = {
+  MONASTERY: 1,
+  CITY: 2,
+  ROAD: 3,
+  FIELD: 4
+};
+
+// Legacy meeple types for compatibility
 export const MEEPLE_TYPES = {
   ROAD: 'road',
   CITY: 'city',
   MONASTERY: 'monastery',
   FIELD: 'field'
+};
+
+// Meeple placement data for each tile type
+export const TILE_MEEPLE_PLACEMENTS = {
+  A: [
+    { column: 0, row: 0, type: MEEPLE_PLACEMENT_TYPES.MONASTERY },
+    { column: 20, row: -20, type: MEEPLE_PLACEMENT_TYPES.FIELD },
+    { column: 0, row: 25, type: MEEPLE_PLACEMENT_TYPES.ROAD }
+  ],
+  B: [
+    { column: 0, row: 0, type: MEEPLE_PLACEMENT_TYPES.MONASTERY },
+    { column: 20, row: -20, type: MEEPLE_PLACEMENT_TYPES.FIELD }
+  ],
+  C: [
+    { column: 0, row: 0, type: MEEPLE_PLACEMENT_TYPES.CITY }
+  ],
+  D: [
+    { column: 0, row: -22, type: MEEPLE_PLACEMENT_TYPES.CITY },
+    { column: -15, row: -9, type: MEEPLE_PLACEMENT_TYPES.FIELD },
+    { column: 15, row: 16, type: MEEPLE_PLACEMENT_TYPES.FIELD },
+    { column: -3, row: 7, type: MEEPLE_PLACEMENT_TYPES.ROAD }
+  ],
+  E: [
+    { column: 0, row: -22, type: MEEPLE_PLACEMENT_TYPES.CITY },
+    { column: 0, row: 10, type: MEEPLE_PLACEMENT_TYPES.FIELD }
+  ],
+  F: [
+    { column: 0, row: 0, type: MEEPLE_PLACEMENT_TYPES.CITY },
+    { column: 0, row: -22, type: MEEPLE_PLACEMENT_TYPES.FIELD },
+    { column: 0, row: 26, type: MEEPLE_PLACEMENT_TYPES.FIELD }
+  ],
+  G: [
+    { column: 0, row: 0, type: MEEPLE_PLACEMENT_TYPES.CITY },
+    { column: 0, row: -22, type: MEEPLE_PLACEMENT_TYPES.FIELD },
+    { column: 0, row: 26, type: MEEPLE_PLACEMENT_TYPES.FIELD }
+  ],
+  H: [
+    { column: 0, row: -22, type: MEEPLE_PLACEMENT_TYPES.CITY },
+    { column: 0, row: 22, type: MEEPLE_PLACEMENT_TYPES.CITY },
+    { column: 0, row: 0, type: MEEPLE_PLACEMENT_TYPES.FIELD }
+  ],
+  I: [
+    { column: 0, row: -22, type: MEEPLE_PLACEMENT_TYPES.CITY },
+    { column: -22, row: 0, type: MEEPLE_PLACEMENT_TYPES.CITY },
+    { column: 5, row: 5, type: MEEPLE_PLACEMENT_TYPES.FIELD }
+  ],
+  J: [
+    { column: 0, row: -22, type: MEEPLE_PLACEMENT_TYPES.CITY },
+    { column: -22, row: -4, type: MEEPLE_PLACEMENT_TYPES.FIELD },
+    { column: 22, row: 22, type: MEEPLE_PLACEMENT_TYPES.FIELD },
+    { column: 2, row: 2, type: MEEPLE_PLACEMENT_TYPES.ROAD }
+  ],
+  K: [
+    { column: 0, row: -22, type: MEEPLE_PLACEMENT_TYPES.CITY },
+    { column: 22, row: 10, type: MEEPLE_PLACEMENT_TYPES.FIELD },
+    { column: -15, row: 15, type: MEEPLE_PLACEMENT_TYPES.FIELD },
+    { column: 7, row: -2, type: MEEPLE_PLACEMENT_TYPES.ROAD }
+  ],
+  L: [
+    { column: 0, row: -22, type: MEEPLE_PLACEMENT_TYPES.CITY },
+    { column: -25, row: -15, type: MEEPLE_PLACEMENT_TYPES.FIELD },
+    { column: -20, row: 20, type: MEEPLE_PLACEMENT_TYPES.FIELD },
+    { column: 20, row: 20, type: MEEPLE_PLACEMENT_TYPES.FIELD },
+    { column: 22, row: 0, type: MEEPLE_PLACEMENT_TYPES.ROAD },
+    { column: -22, row: 0, type: MEEPLE_PLACEMENT_TYPES.ROAD },
+    { column: 0, row: 22, type: MEEPLE_PLACEMENT_TYPES.ROAD }
+  ],
+  M: [
+    { column: 12, row: -12, type: MEEPLE_PLACEMENT_TYPES.CITY },
+    { column: -12, row: 12, type: MEEPLE_PLACEMENT_TYPES.FIELD }
+  ],
+  N: [
+    { column: 12, row: -12, type: MEEPLE_PLACEMENT_TYPES.CITY },
+    { column: -12, row: 12, type: MEEPLE_PLACEMENT_TYPES.FIELD }
+  ],
+  O: [
+    { column: -12, row: -12, type: MEEPLE_PLACEMENT_TYPES.CITY },
+    { column: -12, row: 20, type: MEEPLE_PLACEMENT_TYPES.FIELD },
+    { column: 22, row: 22, type: MEEPLE_PLACEMENT_TYPES.FIELD },
+    { column: 9, row: 9, type: MEEPLE_PLACEMENT_TYPES.ROAD }
+  ],
+  P: [
+    { column: -12, row: -12, type: MEEPLE_PLACEMENT_TYPES.CITY },
+    { column: -12, row: 20, type: MEEPLE_PLACEMENT_TYPES.FIELD },
+    { column: 22, row: 22, type: MEEPLE_PLACEMENT_TYPES.FIELD },
+    { column: 9, row: 9, type: MEEPLE_PLACEMENT_TYPES.ROAD }
+  ],
+  Q: [
+    { column: 0, row: -10, type: MEEPLE_PLACEMENT_TYPES.CITY },
+    { column: 0, row: 22, type: MEEPLE_PLACEMENT_TYPES.FIELD }
+  ],
+  R: [
+    { column: 0, row: -10, type: MEEPLE_PLACEMENT_TYPES.CITY },
+    { column: 0, row: 22, type: MEEPLE_PLACEMENT_TYPES.FIELD }
+  ],
+  S: [
+    { column: 0, row: -10, type: MEEPLE_PLACEMENT_TYPES.CITY },
+    { column: -15, row: 23, type: MEEPLE_PLACEMENT_TYPES.FIELD },
+    { column: 15, row: 23, type: MEEPLE_PLACEMENT_TYPES.FIELD },
+    { column: 0, row: 20, type: MEEPLE_PLACEMENT_TYPES.ROAD }
+  ],
+  T: [
+    { column: 0, row: -10, type: MEEPLE_PLACEMENT_TYPES.CITY },
+    { column: -15, row: 23, type: MEEPLE_PLACEMENT_TYPES.FIELD },
+    { column: 15, row: 23, type: MEEPLE_PLACEMENT_TYPES.FIELD },
+    { column: 0, row: 20, type: MEEPLE_PLACEMENT_TYPES.ROAD }
+  ],
+  U: [
+    { column: 19, row: 0, type: MEEPLE_PLACEMENT_TYPES.FIELD },
+    { column: -19, row: 0, type: MEEPLE_PLACEMENT_TYPES.FIELD },
+    { column: 0, row: 0, type: MEEPLE_PLACEMENT_TYPES.ROAD }
+  ],
+  V: [
+    { column: 10, row: -10, type: MEEPLE_PLACEMENT_TYPES.FIELD },
+    { column: -20, row: 17, type: MEEPLE_PLACEMENT_TYPES.FIELD },
+    { column: -10, row: 5, type: MEEPLE_PLACEMENT_TYPES.ROAD }
+  ],
+  W: [
+    { column: 0, row: -20, type: MEEPLE_PLACEMENT_TYPES.FIELD },
+    { column: -22, row: 20, type: MEEPLE_PLACEMENT_TYPES.FIELD },
+    { column: 22, row: 20, type: MEEPLE_PLACEMENT_TYPES.FIELD },
+    { column: 20, row: 0, type: MEEPLE_PLACEMENT_TYPES.ROAD },
+    { column: -20, row: 0, type: MEEPLE_PLACEMENT_TYPES.ROAD },
+    { column: 0, row: 20, type: MEEPLE_PLACEMENT_TYPES.ROAD }
+  ],
+  X: [
+    { column: -20, row: -20, type: MEEPLE_PLACEMENT_TYPES.FIELD },
+    { column: 20, row: -20, type: MEEPLE_PLACEMENT_TYPES.FIELD },
+    { column: -20, row: 20, type: MEEPLE_PLACEMENT_TYPES.FIELD },
+    { column: 20, row: 20, type: MEEPLE_PLACEMENT_TYPES.FIELD },
+    { column: 20, row: 0, type: MEEPLE_PLACEMENT_TYPES.ROAD },
+    { column: -20, row: 0, type: MEEPLE_PLACEMENT_TYPES.ROAD },
+    { column: 0, row: 20, type: MEEPLE_PLACEMENT_TYPES.ROAD },
+    { column: 0, row: -20, type: MEEPLE_PLACEMENT_TYPES.ROAD }
+  ]
+};
+
+// Function to rotate meeple placement coordinates
+export const rotateMeeplePlacement = (placement, rotation) => {
+  const { column, row } = placement;
+  let newColumn = column;
+  let newRow = row;
+  
+  // Apply rotation transformations
+  for (let i = 0; i < rotation; i++) {
+    const temp = newColumn;
+    newColumn = -newRow;
+    newRow = temp;
+  }
+  
+  return {
+    ...placement,
+    column: newColumn,
+    row: newRow
+  };
+};
+
+// Function to get meeple placements for a tile with rotation
+export const getMeeplePlacements = (tileType, rotation = 0) => {
+  const placements = TILE_MEEPLE_PLACEMENTS[tileType] || [];
+  return placements.map(placement => rotateMeeplePlacement(placement, rotation));
 };
 
 // Function to check if a meeple can be placed on a specific feature of a tile
@@ -203,8 +372,9 @@ export const canPlaceMeeple = (gameState, x, y, meepleType) => {
 };
 
 // Function to place a meeple on a tile
-export const placeMeeple = (gameState, x, y, meepleType, playerId) => {
-  if (!canPlaceMeeple(gameState, x, y, meepleType)) {
+export const placeMeeple = (gameState, x, y, meepleSpotIndex, playerId) => {
+  const tile = gameState.board[y][x];
+  if (!tile) {
     return gameState;
   }
   
@@ -212,7 +382,7 @@ export const placeMeeple = (gameState, x, y, meepleType, playerId) => {
   newBoard[y][x] = {
     ...newBoard[y][x],
     meeple: {
-      type: meepleType,
+      spotIndex: meepleSpotIndex,
       playerId
     }
   };

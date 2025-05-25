@@ -8,7 +8,8 @@ import {
   placeTile, 
   placeMeeple,
   MEEPLE_TYPES,
-  getValidRotations
+  getValidRotations,
+  getMeeplePlacements
 } from '../utils/gameLogic';
 
 const Game = () => {
@@ -20,6 +21,11 @@ const Game = () => {
   const [selectedPosition, setSelectedPosition] = useState(null); // { x, y }
   const [currentRotation, setCurrentRotation] = useState(0);
   const [validRotations, setValidRotations] = useState([]);
+  
+  // New meeple placement states
+  const [meeplePlacementMode, setMeeplePlacementMode] = useState(false);
+  const [selectedMeepleSpot, setSelectedMeepleSpot] = useState(-1);
+  const [meeplePlacementTile, setMeeplePlacementTile] = useState(null);
 
   // Initialize the game
   useEffect(() => {
@@ -63,34 +69,90 @@ const Game = () => {
     setCurrentRotation(validRotations[nextIndex]);
   };
 
-  // Handle confirm placement
+  // Handle confirm placement - now enters meeple placement mode
   const handleConfirmPlacement = () => {
     if (!selectedPosition || gamePhase !== 'PLAYER_TURN') return;
 
     const currentTileType = gameState.currentTile;
     const newGameState = placeTile(gameState, selectedPosition.x, selectedPosition.y, currentTileType, currentRotation);
     setGameState(newGameState);
-    setLastPlacedTile(selectedPosition);
+    setLastPlacedTile({ ...selectedPosition, rotation: currentRotation, tileType: currentTileType });
     
-    // Determine available meeple types for this tile
-    const tile = TILES[currentTileType];
-    const meepleTypes = [];
+    // Enter meeple placement mode
+    setMeeplePlacementMode(true);
+    setMeeplePlacementTile({ x: selectedPosition.x, y: selectedPosition.y, rotation: currentRotation, tileType: currentTileType });
+    setSelectedMeepleSpot(-1);
     
-    if (tile.borders.includes('R')) meepleTypes.push(MEEPLE_TYPES.ROAD);
-    if (tile.borders.includes('C')) meepleTypes.push(MEEPLE_TYPES.CITY);
-    if (tile.borders.includes('F')) meepleTypes.push(MEEPLE_TYPES.FIELD);
-    meepleTypes.push(MEEPLE_TYPES.MONASTERY); // Simplified: any tile can have a monastery
-    
-    setAvailableMeepleTypes(meepleTypes);
-    setGamePhase('MEEPLE_PLACEMENT');
-    
-    // Reset selection states
+    // Reset tile selection states
     setSelectedPosition(null);
     setCurrentRotation(0);
     setValidRotations([]);
   };
 
-  // Handle meeple placement
+  // Handle meeple spot click
+  const handleMeepleSpotClick = (spotIndex) => {
+    if (!meeplePlacementMode) return;
+    
+    // Toggle selection - if same spot is clicked, deselect it
+    if (selectedMeepleSpot === spotIndex) {
+      setSelectedMeepleSpot(-1);
+    } else {
+      setSelectedMeepleSpot(spotIndex);
+    }
+  };
+
+  // Handle meeple placement confirmation
+  const handleMeepleConfirm = () => {
+    if (!meeplePlacementMode || !lastPlacedTile) return;
+
+    let finalGameState = gameState;
+    
+    // Place meeple if one is selected
+    if (selectedMeepleSpot !== -1) {
+      const { x, y } = lastPlacedTile;
+      finalGameState = placeMeeple(gameState, x, y, selectedMeepleSpot, 0); // Player ID is 0
+      setGameState(finalGameState);
+    }
+    
+    // Exit meeple placement mode
+    setMeeplePlacementMode(false);
+    setSelectedMeepleSpot(-1);
+    setMeeplePlacementTile(null);
+    
+    // Move to computer's turn
+    setGamePhase('COMPUTER_TURN');
+    setTimeout(handleComputerTurn, 1000); // Delay for better UX
+  };
+
+  // Handle meeple placement cancellation
+  const handleMeepleCancel = () => {
+    if (!meeplePlacementMode || !lastPlacedTile) return;
+
+    // Remove the placed tile and go back to tile placement
+    const { x, y } = lastPlacedTile;
+    const newBoard = gameState.board.map(row => [...row]);
+    newBoard[y][x] = null;
+    
+    const newGameState = {
+      ...gameState,
+      board: newBoard,
+      placedTiles: gameState.placedTiles - 1
+    };
+    
+    setGameState(newGameState);
+    setMeeplePlacementMode(false);
+    setSelectedMeepleSpot(-1);
+    setMeeplePlacementTile(null);
+    setLastPlacedTile(null);
+    
+    // Go back to tile placement with the same tile
+    setSelectedPosition({ x, y });
+    setCurrentRotation(lastPlacedTile.rotation);
+    const validRots = getValidRotations(newGameState.board, x, y, TILES[gameState.currentTile]);
+    setValidRotations(validRots);
+  };
+
+  // Handle meeple placement (legacy - keeping for compatibility)
   const handleMeeplePlaced = (meepleType) => {
     if (!lastPlacedTile || gamePhase !== 'MEEPLE_PLACEMENT') return;
 
@@ -103,7 +165,7 @@ const Game = () => {
     setTimeout(handleComputerTurn, 1000); // Delay for better UX
   };
 
-  // Skip meeple placement
+  // Skip meeple placement (legacy - keeping for compatibility)
   const handleSkipMeeple = () => {
     setGamePhase('COMPUTER_TURN');
     setTimeout(handleComputerTurn, 1000); // Delay for better UX
@@ -123,7 +185,11 @@ const Game = () => {
     if (placements.length > 0) {
       // Choose a random placement
       const randomIndex = Math.floor(Math.random() * placements.length);
-      const { x, y, rotation } = placements[randomIndex];
+      const { x, y } = placements[randomIndex];
+      
+      // Get valid rotations and choose one
+      const validRots = getValidRotations(gameState.board, x, y, computerTile);
+      const rotation = validRots[Math.floor(Math.random() * validRots.length)];
       
       // Place the tile
       const newGameState = placeTile(gameState, x, y, computerTileType, rotation);
@@ -131,19 +197,15 @@ const Game = () => {
       // Decide whether to place a meeple (50% chance)
       let finalGameState = newGameState;
       if (Math.random() > 0.5) {
-        // Get available meeple types for this tile
-        const availableTypes = [];
-        if (computerTile.borders.includes('R')) availableTypes.push(MEEPLE_TYPES.ROAD);
-        if (computerTile.borders.includes('C')) availableTypes.push(MEEPLE_TYPES.CITY);
-        if (computerTile.borders.includes('F')) availableTypes.push(MEEPLE_TYPES.FIELD);
-        availableTypes.push(MEEPLE_TYPES.MONASTERY);
+        // Get available meeple placements for this tile
+        const meeplePlacements = getMeeplePlacements(computerTileType, rotation);
         
-        if (availableTypes.length > 0) {
-          // Choose a random meeple type
-          const randomType = availableTypes[Math.floor(Math.random() * availableTypes.length)];
+        if (meeplePlacements.length > 0) {
+          // Choose a random meeple placement
+          const randomSpotIndex = Math.floor(Math.random() * meeplePlacements.length);
           
           // Place the meeple
-          finalGameState = placeMeeple(newGameState, x, y, randomType, 1); // Computer ID is 1
+          finalGameState = placeMeeple(newGameState, x, y, randomSpotIndex, 1); // Computer ID is 1
         }
       }
       
@@ -173,6 +235,12 @@ const Game = () => {
         currentRotation={currentRotation}
         currentTile={gameState.currentTile}
         onConfirmPlacement={handleConfirmPlacement}
+        meeplePlacementMode={meeplePlacementMode}
+        meeplePlacementTile={meeplePlacementTile}
+        selectedMeepleSpot={selectedMeepleSpot}
+        onMeepleSpotClick={handleMeepleSpotClick}
+        onMeepleConfirm={handleMeepleConfirm}
+        onMeepleCancel={handleMeepleCancel}
       />
       
       {gamePhase === 'MEEPLE_PLACEMENT' && (

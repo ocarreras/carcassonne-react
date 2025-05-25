@@ -1,5 +1,6 @@
 import React from "react";
 import PropTypes from "prop-types";
+import { getMeeplePlacements } from "../utils/gameLogic";
 
 const Tile = ({
   type,
@@ -12,6 +13,11 @@ const Tile = ({
   meeple,
   scale = 1,
   isSelected = false,
+  meeplePlacementMode = false,
+  selectedMeepleSpot = -1,
+  onMeepleSpotClick,
+  onMeepleConfirm,
+  onMeepleCancel
 }) => {
   const tileSize = 100 * scale;
 
@@ -57,6 +63,142 @@ const Tile = ({
     }
   };
 
+  // Get meeple placements for this tile if in meeple placement mode
+  const meeplePlacements = meeplePlacementMode && type !== 'Empty' 
+    ? getMeeplePlacements(type, rotation) 
+    : [];
+
+  // Render meeple spots
+  const renderMeepleSpots = () => {
+    if (!meeplePlacementMode || type === 'Empty') return null;
+
+    return meeplePlacements.map((placement, index) => {
+      const isSpotSelected = selectedMeepleSpot === index;
+      const spotStyle = {
+        position: "absolute",
+        left: `${50 + placement.column}px`,
+        top: `${50 + placement.row}px`,
+        width: "20px",
+        height: "20px",
+        backgroundImage: isSpotSelected 
+          ? "url(/meeples/0.png)" 
+          : "url(/spot.gif)",
+        backgroundSize: "cover",
+        cursor: "pointer",
+        zIndex: 4,
+        transform: "translate(-50%, -50%)"
+      };
+
+      return (
+        <div
+          key={index}
+          style={spotStyle}
+          onClick={(e) => {
+            e.stopPropagation();
+            if (onMeepleSpotClick) {
+              onMeepleSpotClick(index);
+            }
+          }}
+          onTouchStart={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (onMeepleSpotClick) {
+              onMeepleSpotClick(index);
+            }
+          }}
+        />
+      );
+    });
+  };
+
+  // Render check/cross buttons for meeple placement
+  const renderMeepleButtons = () => {
+    if (!meeplePlacementMode || type === 'Empty') return null;
+
+    return (
+      <>
+        {/* Check button */}
+        <div
+          onClick={(e) => {
+            e.stopPropagation();
+            if (onMeepleConfirm) {
+              onMeepleConfirm();
+            }
+          }}
+          onTouchStart={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (onMeepleConfirm) {
+              onMeepleConfirm();
+            }
+          }}
+          style={{
+            position: "absolute",
+            top: "5px",
+            right: "5px",
+            width: `${20 * scale}px`,
+            height: `${20 * scale}px`,
+            backgroundImage: "url(/icon-accept-48.png)",
+            backgroundSize: "cover",
+            cursor: "pointer",
+            zIndex: 5,
+          }}
+        />
+        {/* Cross button */}
+        <div
+          onClick={(e) => {
+            e.stopPropagation();
+            if (onMeepleCancel) {
+              onMeepleCancel();
+            }
+          }}
+          onTouchStart={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (onMeepleCancel) {
+              onMeepleCancel();
+            }
+          }}
+          style={{
+            position: "absolute",
+            top: "5px",
+            right: `${30 * scale}px`,
+            width: `${20 * scale}px`,
+            height: `${20 * scale}px`,
+            backgroundImage: "url(/icon-reject-48.png)",
+            backgroundSize: "cover",
+            cursor: "pointer",
+            zIndex: 5,
+          }}
+        />
+      </>
+    );
+  };
+
+  // Render existing meeple if placed
+  const renderExistingMeeple = () => {
+    if (!meeple || meeplePlacementMode) return null;
+
+    const meeplePlacements = getMeeplePlacements(type, rotation);
+    const placement = meeplePlacements[meeple.spotIndex];
+    
+    if (!placement) return null;
+
+    const existingMeepleStyle = {
+      position: "absolute",
+      left: `${50 + placement.column}px`,
+      top: `${50 + placement.row}px`,
+      width: "20px",
+      height: "20px",
+      backgroundImage: `url(/meeples/${meeple.playerId}.png)`,
+      backgroundSize: "cover",
+      zIndex: 3,
+      transform: "translate(-50%, -50%)"
+    };
+
+    return <div style={existingMeepleStyle} />;
+  };
+
   return (
     <div style={containerStyle}>
       <div
@@ -65,18 +207,36 @@ const Tile = ({
         onTouchStart={handleTouchStart}
         data-testid={`tile-${type}-${x}-${y}`}
       >
-        {meeple && <div style={meepleStyle} />}
+        {/* Legacy meeple rendering (centered) */}
+        {meeple && !meeplePlacementMode && meeple.spotIndex === undefined && (
+          <div style={meepleStyle} />
+        )}
       </div>
-      {isSelected && type !== "Empty" && (
+      
+      {/* Render meeple spots for placement */}
+      {renderMeepleSpots()}
+      
+      {/* Render existing meeple at specific spot */}
+      {renderExistingMeeple()}
+      
+      {/* Render meeple placement buttons */}
+      {renderMeepleButtons()}
+      
+      {/* Render tile placement checkmark */}
+      {isSelected && type !== "Empty" && !meeplePlacementMode && (
         <div
           onClick={(e) => {
             e.stopPropagation();
-            onConfirm();
+            if (onConfirm) {
+              onConfirm();
+            }
           }}
           onTouchStart={(e) => {
             e.preventDefault();
             e.stopPropagation();
-            onConfirm();
+            if (onConfirm) {
+              onConfirm();
+            }
           }}
           style={{
             position: "absolute",
@@ -103,12 +263,18 @@ Tile.propTypes = {
   isHighlighted: PropTypes.bool,
   onClick: PropTypes.func,
   meeple: PropTypes.shape({
-    type: PropTypes.string.isRequired,
+    type: PropTypes.string,
     playerId: PropTypes.number.isRequired,
+    spotIndex: PropTypes.number
   }),
   scale: PropTypes.number,
   isSelected: PropTypes.bool,
   onConfirm: PropTypes.func,
+  meeplePlacementMode: PropTypes.bool,
+  selectedMeepleSpot: PropTypes.number,
+  onMeepleSpotClick: PropTypes.func,
+  onMeepleConfirm: PropTypes.func,
+  onMeepleCancel: PropTypes.func
 };
 
 export default Tile;
