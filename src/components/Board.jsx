@@ -240,11 +240,10 @@ const Board = ({
     <div
       style={{
         width: '100%',
-        height: 'calc(100vh - 200px)', // Full screen minus header
+        height: '100%',
         overflow: 'hidden',
         position: 'relative',
         backgroundColor: '#f0e6d2',
-        border: '1px solid #ccc',
         cursor: isDragging ? 'grabbing' : 'grab',
         touchAction: 'none' // Prevent browser's default touch behavior
       }}

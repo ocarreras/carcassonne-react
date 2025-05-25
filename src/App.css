@@ -6,25 +6,15 @@
 
 body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background-color: #e9e9e9;
+  background-color: #f0e6d2;
   color: #333;
+  margin: 0;
+  overflow: hidden;
 }
 
 #root {
   width: 100%;
-  min-height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  padding: 20px;
-}
-
-.app-container {
-  width: 100%;
-  max-width: 1200px;
-  background-color: #fff;
-  border-radius: 10px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  height: 100vh;
   overflow: hidden;
 }
 

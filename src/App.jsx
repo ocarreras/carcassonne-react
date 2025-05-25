@@ -1,12 +1,19 @@
-import Game from './components/Game'
-import './App.css'
+import Game from "./components/Game";
+import "./App.css";
+import NavBar from "./components/NavBar";
 
 function App() {
   return (
-    <div className="app-container">
+    <div style={{ 
+      display: 'flex', 
+      flexDirection: 'column',
+      height: '100vh',
+      overflow: 'hidden'
+    }}>
+      <NavBar />
       <Game />
     </div>
-  )
+  );
 }
 
-export default App
+export default App;

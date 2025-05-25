@@ -154,101 +154,16 @@ const Game = () => {
     setGamePhase('PLAYER_TURN');
   };
 
-  // Render game status
-  const renderGameStatus = () => {
-    if (!gameState) return null;
-
-    let statusText = '';
-    switch (gamePhase) {
-      case 'PLAYER_TURN':
-        statusText = `Your turn - Place tile ${gameState.currentTile}`;
-        break;
-      case 'MEEPLE_PLACEMENT':
-        statusText = 'Place a meeple or skip';
-        break;
-      case 'COMPUTER_TURN':
-        statusText = 'Computer is thinking...';
-        break;
-      default:
-        statusText = '';
-    }
-
-    return (
-      <div style={{ 
-        padding: '10px', 
-        backgroundColor: '#4a6c6f', 
-        color: 'white',
-        borderRadius: '5px',
-        marginBottom: '10px',
-        textAlign: 'center',
-        fontWeight: 'bold'
-      }}>
-        {statusText}
-      </div>
-    );
-  };
-
-  // Render current tile preview
-  const renderCurrentTile = () => {
-    if (!gameState || gamePhase !== 'PLAYER_TURN') return null;
-
-    return (
-      <div style={{ 
-        display: 'flex', 
-        alignItems: 'center', 
-        marginBottom: '20px',
-        backgroundColor: 'rgba(255, 255, 255, 0.9)',
-        padding: '10px',
-        borderRadius: '10px',
-        boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
-      }}>
-        <div style={{ marginRight: '15px' }}>
-          <h3 style={{ margin: '0 0 5px 0' }}>Current Tile:</h3>
-          <div style={{ 
-            width: '80px', 
-            height: '80px',
-            backgroundImage: `url(/base_game/${gameState.currentTile}.png)`,
-            backgroundSize: 'cover',
-            border: '2px solid #4a6c6f',
-            borderRadius: '5px'
-          }} />
-        </div>
-        <div>
-          <p style={{ margin: '0', fontSize: '0.9rem' }}>
-            Possible placements: {possiblePlacements.length}
-          </p>
-          <p style={{ margin: '5px 0 0 0', fontSize: '0.9rem' }}>
-            Tiles placed: {gameState.placedTiles}
-          </p>
-        </div>
-      </div>
-    );
-  };
-
   if (!gameState) {
     return <div>Loading game...</div>;
   }
 
   return (
     <div style={{ 
-      maxWidth: '1000px', 
-      margin: '0 auto', 
-      padding: '20px',
-      backgroundColor: '#f5f5f5',
-      borderRadius: '10px',
-      boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)'
+      height: 'calc(100vh - 60px)', // Full height minus navbar
+      position: 'relative',
+      overflow: 'hidden'
     }}>
-      <h1 style={{ 
-        textAlign: 'center', 
-        color: '#333',
-        marginBottom: '20px'
-      }}>
-        Carcassonne
-      </h1>
-      
-      {renderGameStatus()}
-      {renderCurrentTile()}
-      
       <Board 
         gameState={gameState}
         possiblePlacements={gamePhase === 'PLAYER_TURN' ? possiblePlacements : []}
@@ -261,11 +176,19 @@ const Game = () => {
       />
       
       {gamePhase === 'MEEPLE_PLACEMENT' && (
-        <MeeplePlacement 
-          onMeeplePlaced={handleMeeplePlaced}
-          onSkip={handleSkipMeeple}
-          availableTypes={availableMeepleTypes}
-        />
+        <div style={{
+          position: 'absolute',
+          bottom: '20px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 1000
+        }}>
+          <MeeplePlacement 
+            onMeeplePlaced={handleMeeplePlaced}
+            onSkip={handleSkipMeeple}
+            availableTypes={availableMeepleTypes}
+          />
+        </div>
       )}
     </div>
   );
