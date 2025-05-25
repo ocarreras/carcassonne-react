@@ -156,8 +156,16 @@ export const placeTile = (gameState, x, y, tileType, rotation = 0) => {
   const tile = { ...TILES[tileType], x, y, rotation };
   const rotatedTile = rotateTile(tile, rotation);
   
-  // Create a new board with the tile placed
-  const newBoard = board.map(row => [...row]);
+  // Create a deep copy of the board preserving all existing tiles with their data (including meeples)
+  const newBoard = board.map(row => 
+    row.map(cell => {
+      if (!cell) return null;
+      return {
+        ...cell,
+        meeple: cell.meeple ? { ...cell.meeple } : undefined
+      };
+    })
+  );
   newBoard[y][x] = rotatedTile;
   
   return {
@@ -378,7 +386,17 @@ export const placeMeeple = (gameState, x, y, meepleSpotIndex, playerId) => {
     return gameState;
   }
   
-  const newBoard = gameState.board.map(row => [...row]);
+  // Create a deep copy of the board to preserve all existing data
+  const newBoard = gameState.board.map(row => 
+    row.map(cell => {
+      if (!cell) return null;
+      return {
+        ...cell,
+        meeple: cell.meeple ? { ...cell.meeple } : undefined
+      };
+    })
+  );
+  
   newBoard[y][x] = {
     ...newBoard[y][x],
     meeple: {

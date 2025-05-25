@@ -1,270 +1,374 @@
-import React, { useState, useEffect } from 'react';
-import Board from './Board';
-import MeeplePlacement from './MeeplePlacement';
-import { 
-  initializeBoard, 
-  TILES, 
-  findPossiblePlacements, 
-  placeTile, 
-  placeMeeple,
-  MEEPLE_TYPES,
-  getValidRotations,
-  getMeeplePlacements
-} from '../utils/gameLogic';
+import React from 'react';
+import { useGame } from '../contexts/GameContext.jsx';
+import { GAME_PHASES } from '../utils/messageTypes.js';
+import Board from './Board.jsx';
 
 const Game = () => {
-  const [gameState, setGameState] = useState(null);
-  const [possiblePlacements, setPossiblePlacements] = useState([]);
-  const [gamePhase, setGamePhase] = useState('PLAYER_TURN'); // PLAYER_TURN, MEEPLE_PLACEMENT, COMPUTER_TURN
-  const [lastPlacedTile, setLastPlacedTile] = useState(null);
-  const [availableMeepleTypes, setAvailableMeepleTypes] = useState([]);
-  const [selectedPosition, setSelectedPosition] = useState(null); // { x, y }
-  const [currentRotation, setCurrentRotation] = useState(0);
-  const [validRotations, setValidRotations] = useState([]);
-  
-  // New meeple placement states
-  const [meeplePlacementMode, setMeeplePlacementMode] = useState(false);
-  const [selectedMeepleSpot, setSelectedMeepleSpot] = useState(-1);
-  const [meeplePlacementTile, setMeeplePlacementTile] = useState(null);
+  const { state, actions } = useGame();
 
-  // Initialize the game
-  useEffect(() => {
-    const initialGameState = initializeBoard();
-    setGameState(initialGameState);
-  }, []);
-
-  // Calculate possible placements when the current tile changes
-  useEffect(() => {
-    if (!gameState) return;
-
-    // Only show possible placements when in PLAYER_TURN and NOT in meeple placement mode
-    if (gamePhase === 'PLAYER_TURN' && !meeplePlacementMode) {
-      const currentTileType = gameState.currentTile;
-      const currentTile = TILES[currentTileType];
-      const placements = findPossiblePlacements(gameState.board, currentTile);
-      setPossiblePlacements(placements);
-    } else {
-      setPossiblePlacements([]);
-    }
-  }, [gameState, gamePhase, meeplePlacementMode]);
-
-  // Handle empty tile click
+  // Handle empty tile click for tile placement
   const handleEmptyTileClick = (x, y) => {
-    if (gamePhase !== 'PLAYER_TURN' || meeplePlacementMode) return;
+    if (!state.isMyTurn || state.meeplePlacementMode) return;
 
-    // Get valid rotations for this position
-    const validRots = getValidRotations(gameState.board, x, y, TILES[gameState.currentTile]);
-    
-    if (validRots.length > 0) {
-      setSelectedPosition({ x, y });
-      setCurrentRotation(validRots[0]); // Start with first valid rotation
-      setValidRotations(validRots);
+    // Check if this position is in valid placements
+    const isValidPlacement = state.validPlacements.some(
+      placement => placement.position.x === x && placement.position.y === y
+    );
+
+    if (isValidPlacement) {
+      actions.setSelectedPosition({ x, y });
+      actions.setCurrentRotation(0); // Start with 0 rotation
     }
   };
 
-  // Handle selected tile click (for rotation)
+  // Handle selected tile click for rotation
   const handleSelectedTileClick = () => {
-    if (!selectedPosition || validRotations.length === 0 || meeplePlacementMode) return;
+    if (!state.selectedPosition || !state.isMyTurn || state.meeplePlacementMode) return;
 
-    // Find next valid rotation
-    const currentIndex = validRotations.indexOf(currentRotation);
-    const nextIndex = (currentIndex + 1) % validRotations.length;
-    setCurrentRotation(validRotations[nextIndex]);
+    // Cycle through rotations (0, 90, 180, 270)
+    const newRotation = (state.currentRotation + 90) % 360;
+    actions.setCurrentRotation(newRotation);
   };
 
-  // Handle confirm placement - now enters meeple placement mode
+  // Handle confirm tile placement
   const handleConfirmPlacement = () => {
-    if (!selectedPosition || gamePhase !== 'PLAYER_TURN' || meeplePlacementMode) return;
+    if (!state.selectedPosition || !state.isMyTurn || state.meeplePlacementMode) return;
 
-    const currentTileType = gameState.currentTile;
-    const newGameState = placeTile(gameState, selectedPosition.x, selectedPosition.y, currentTileType, currentRotation);
-    setGameState(newGameState);
-    setLastPlacedTile({ ...selectedPosition, rotation: currentRotation, tileType: currentTileType });
+    // Send tile placement to server
+    actions.placeTile(state.selectedPosition, state.currentRotation);
     
-    // Enter meeple placement mode
-    setMeeplePlacementMode(true);
-    setMeeplePlacementTile({ x: selectedPosition.x, y: selectedPosition.y, rotation: currentRotation, tileType: currentTileType });
-    setSelectedMeepleSpot(-1);
-    
-    // Reset tile selection states
-    setSelectedPosition(null);
-    setCurrentRotation(0);
-    setValidRotations([]);
+    // Clear selection
+    actions.setSelectedPosition(null);
+    actions.setCurrentRotation(0);
   };
 
   // Handle meeple spot click
   const handleMeepleSpotClick = (spotIndex) => {
-    if (!meeplePlacementMode) return;
+    if (!state.meeplePlacementMode || !state.isMyTurn) return;
     
-    // Toggle selection - if same spot is clicked, deselect it
-    if (selectedMeepleSpot === spotIndex) {
-      setSelectedMeepleSpot(-1);
+    // Toggle selection
+    if (state.selectedMeepleSpot === spotIndex) {
+      actions.setSelectedMeepleSpot(-1);
     } else {
-      setSelectedMeepleSpot(spotIndex);
+      actions.setSelectedMeepleSpot(spotIndex);
     }
   };
 
   // Handle meeple placement confirmation
   const handleMeepleConfirm = () => {
-    if (!meeplePlacementMode || !lastPlacedTile) return;
+    if (!state.meeplePlacementMode || !state.isMyTurn) return;
 
-    let finalGameState = gameState;
-    
-    // Place meeple if one is selected
-    if (selectedMeepleSpot !== -1) {
-      const { x, y } = lastPlacedTile;
-      finalGameState = placeMeeple(finalGameState, x, y, selectedMeepleSpot, 0); // Player ID is 0
+    if (state.selectedMeepleSpot !== -1) {
+      // Place meeple
+      actions.placeMeeple(state.selectedMeepleSpot);
+    } else {
+      // Skip meeple placement - send empty meeple placement
+      actions.placeMeeple(-1);
     }
     
-    // Update game state with the final state (with or without meeple)
-    setGameState(finalGameState);
-    
-    // Exit meeple placement mode
-    setMeeplePlacementMode(false);
-    setSelectedMeepleSpot(-1);
-    setMeeplePlacementTile(null);
-    
-    // Move to computer's turn
-    setGamePhase('COMPUTER_TURN');
-    setTimeout(handleComputerTurn, 1000); // Delay for better UX
+    // Clear meeple selection
+    actions.setSelectedMeepleSpot(-1);
   };
 
   // Handle meeple placement cancellation
   const handleMeepleCancel = () => {
-    if (!meeplePlacementMode || !lastPlacedTile) return;
+    if (!state.meeplePlacementMode || !state.isMyTurn) return;
 
-    // Remove the placed tile and go back to tile placement
-    const { x, y } = lastPlacedTile;
-    const newBoard = gameState.board.map(row => [...row]);
-    newBoard[y][x] = null;
-    
-    const newGameState = {
-      ...gameState,
-      board: newBoard,
-      placedTiles: gameState.placedTiles - 1
-    };
-    
-    setGameState(newGameState);
-    setMeeplePlacementMode(false);
-    setSelectedMeepleSpot(-1);
-    setMeeplePlacementTile(null);
-    setLastPlacedTile(null);
-    
-    // Go back to tile placement with the same tile
-    setSelectedPosition({ x, y });
-    setCurrentRotation(lastPlacedTile.rotation);
-    const validRots = getValidRotations(newGameState.board, x, y, TILES[gameState.currentTile]);
-    setValidRotations(validRots);
+    // For now, just skip meeple placement
+    // In a real implementation, we might want to allow going back to tile placement
+    actions.placeMeeple(-1);
+    actions.setSelectedMeepleSpot(-1);
   };
 
-  // Handle meeple placement (legacy - keeping for compatibility)
-  const handleMeeplePlaced = (meepleType) => {
-    if (!lastPlacedTile || gamePhase !== 'MEEPLE_PLACEMENT') return;
-
-    const { x, y } = lastPlacedTile;
-    const newGameState = placeMeeple(gameState, x, y, meepleType, 0); // Player ID is 0
-    setGameState(newGameState);
-    
-    // Move to computer's turn
-    setGamePhase('COMPUTER_TURN');
-    setTimeout(handleComputerTurn, 1000); // Delay for better UX
+  // Get current player info
+  const getCurrentPlayerInfo = () => {
+    if (!state.roomPlayers || !state.currentPlayer) return null;
+    return state.roomPlayers.find(p => p.id === state.currentPlayer);
   };
 
-  // Skip meeple placement (legacy - keeping for compatibility)
-  const handleSkipMeeple = () => {
-    setGamePhase('COMPUTER_TURN');
-    setTimeout(handleComputerTurn, 1000); // Delay for better UX
+  // Get player color
+  const getPlayerColor = (playerId) => {
+    const colors = ['#FF5722', '#2196F3', '#4CAF50', '#FF9800', '#9C27B0'];
+    const playerIndex = state.roomPlayers.findIndex(p => p.id === playerId);
+    return colors[playerIndex % colors.length];
   };
 
-  // Computer's turn
-  const handleComputerTurn = () => {
-    if (!gameState) return;
-
-    // Get a random tile for the computer
-    const computerTileType = gameState.currentTile;
-    const computerTile = TILES[computerTileType];
-    
-    // Find possible placements
-    const placements = findPossiblePlacements(gameState.board, computerTile);
-    
-    if (placements.length > 0) {
-      // Choose a random placement
-      const randomIndex = Math.floor(Math.random() * placements.length);
-      const { x, y } = placements[randomIndex];
-      
-      // Get valid rotations and choose one
-      const validRots = getValidRotations(gameState.board, x, y, computerTile);
-      const rotation = validRots[Math.floor(Math.random() * validRots.length)];
-      
-      // Place the tile
-      const newGameState = placeTile(gameState, x, y, computerTileType, rotation);
-      
-      // Decide whether to place a meeple (50% chance)
-      let finalGameState = newGameState;
-      if (Math.random() > 0.5) {
-        // Get available meeple placements for this tile
-        const meeplePlacements = getMeeplePlacements(computerTileType, rotation);
-        
-        if (meeplePlacements.length > 0) {
-          // Choose a random meeple placement
-          const randomSpotIndex = Math.floor(Math.random() * meeplePlacements.length);
-          
-          // Place the meeple
-          finalGameState = placeMeeple(newGameState, x, y, randomSpotIndex, 1); // Computer ID is 1
-        }
-      }
-      
-      setGameState(finalGameState);
-    }
-    
-    // Back to player's turn
-    setGamePhase('PLAYER_TURN');
-  };
-
-  if (!gameState) {
-    return <div>Loading game...</div>;
+  if (!state.gameState) {
+    return (
+      <div style={styles.loadingContainer}>
+        <div style={styles.loadingCard}>
+          <h2>Loading Game...</h2>
+          <p>Waiting for game state from server</p>
+        </div>
+      </div>
+    );
   }
 
+  const currentPlayerInfo = getCurrentPlayerInfo();
+
   return (
-    <div style={{ 
-      height: 'calc(100vh - 60px)', // Full height minus navbar
-      position: 'relative',
-      overflow: 'hidden'
-    }}>
+    <div style={styles.container}>
+      {/* Game Header */}
+      <div style={styles.gameHeader}>
+        <div style={styles.gameInfo}>
+          <h2 style={styles.gameTitle}>Carcassonne</h2>
+          {state.gamePhase === GAME_PHASES.FINISHED ? (
+            <div style={styles.gameStatus}>Game Finished!</div>
+          ) : (
+            <div style={styles.turnInfo}>
+              {state.isMyTurn ? (
+                <div style={styles.yourTurn}>Your Turn</div>
+              ) : (
+                <div style={styles.otherTurn}>
+                  {currentPlayerInfo ? `${currentPlayerInfo.name}'s Turn` : 'Waiting...'}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        <div style={styles.gameActions}>
+          <button 
+            onClick={actions.leaveRoom}
+            style={styles.leaveButton}
+          >
+            Leave Game
+          </button>
+        </div>
+      </div>
+
+      {/* Players Panel */}
+      <div style={styles.playersPanel}>
+        {state.roomPlayers.map((player, index) => (
+          <div 
+            key={player.id} 
+            style={{
+              ...styles.playerCard,
+              ...(player.id === state.currentPlayer ? styles.activePlayer : {}),
+              ...(player.id === state.playerId ? styles.currentUser : {})
+            }}
+          >
+            <div 
+              style={{
+                ...styles.playerAvatar,
+                backgroundColor: getPlayerColor(player.id)
+              }}
+            >
+              {player.name.charAt(0).toUpperCase()}
+            </div>
+            <div style={styles.playerInfo}>
+              <div style={styles.playerName}>
+                {player.name}
+                {player.id === state.playerId && ' (You)'}
+              </div>
+              <div style={styles.playerScore}>
+                Score: {state.gameState?.scores?.[player.id] || 0}
+              </div>
+              <div style={styles.playerMeeples}>
+                Meeples: {7} {/* TODO: Get actual meeple count */}
+              </div>
+            </div>
+            {player.id === state.currentPlayer && (
+              <div style={styles.turnIndicator}>⏰</div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Current Tile Display */}
+      {state.isMyTurn && state.currentTile && !state.meeplePlacementMode && (
+        <div style={styles.currentTilePanel}>
+          <div style={styles.currentTileInfo}>
+            <h3>Current Tile: {state.currentTile}</h3>
+            <p>Click on a highlighted position to place this tile</p>
+            {state.selectedPosition && (
+              <p>Click the tile again to rotate it, then click the checkmark to confirm</p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Meeple Placement Instructions */}
+      {state.isMyTurn && state.meeplePlacementMode && (
+        <div style={styles.meepleInstructions}>
+          <h3>Place a Meeple (Optional)</h3>
+          <p>Click on a white spot to place a meeple, or click the checkmark to skip</p>
+        </div>
+      )}
+
+      {/* Game Board */}
       <Board 
-        gameState={gameState}
-        possiblePlacements={possiblePlacements}
+        gameState={state.gameState}
+        possiblePlacements={state.isMyTurn && !state.meeplePlacementMode ? state.validPlacements : []}
         onEmptyTileClick={handleEmptyTileClick}
         onSelectedTileClick={handleSelectedTileClick}
-        selectedPosition={selectedPosition}
-        currentRotation={currentRotation}
-        currentTile={gameState.currentTile}
+        selectedPosition={state.selectedPosition}
+        currentRotation={state.currentRotation}
+        currentTile={state.currentTile}
         onConfirmPlacement={handleConfirmPlacement}
-        meeplePlacementMode={meeplePlacementMode}
-        meeplePlacementTile={meeplePlacementTile}
-        selectedMeepleSpot={selectedMeepleSpot}
+        meeplePlacementMode={state.meeplePlacementMode}
+        meeplePlacementTile={state.meeplePlacementMode ? state.selectedPosition : null}
+        selectedMeepleSpot={state.selectedMeepleSpot}
         onMeepleSpotClick={handleMeepleSpotClick}
         onMeepleConfirm={handleMeepleConfirm}
         onMeepleCancel={handleMeepleCancel}
       />
-      
-      {gamePhase === 'MEEPLE_PLACEMENT' && (
-        <div style={{
-          position: 'absolute',
-          bottom: '20px',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          zIndex: 1000
-        }}>
-          <MeeplePlacement 
-            onMeeplePlaced={handleMeeplePlaced}
-            onSkip={handleSkipMeeple}
-            availableTypes={availableMeepleTypes}
-          />
-        </div>
-      )}
     </div>
   );
+};
+
+const styles = {
+  container: {
+    display: 'flex',
+    flexDirection: 'column',
+    height: 'calc(100vh - 60px)',
+    backgroundColor: '#f5f5f5'
+  },
+  loadingContainer: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 'calc(100vh - 60px)',
+    backgroundColor: '#f5f5f5'
+  },
+  loadingCard: {
+    backgroundColor: 'white',
+    padding: '40px',
+    borderRadius: '8px',
+    textAlign: 'center',
+    boxShadow: '0 2px 10px rgba(0,0,0,0.1)'
+  },
+  gameHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: '15px 20px',
+    backgroundColor: 'white',
+    borderBottom: '1px solid #e0e0e0'
+  },
+  gameInfo: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '20px'
+  },
+  gameTitle: {
+    margin: 0,
+    color: '#333',
+    fontSize: '20px'
+  },
+  gameStatus: {
+    padding: '6px 12px',
+    backgroundColor: '#4CAF50',
+    color: 'white',
+    borderRadius: '4px',
+    fontSize: '14px',
+    fontWeight: 'bold'
+  },
+  turnInfo: {
+    display: 'flex',
+    alignItems: 'center'
+  },
+  yourTurn: {
+    padding: '6px 12px',
+    backgroundColor: '#4CAF50',
+    color: 'white',
+    borderRadius: '4px',
+    fontSize: '14px',
+    fontWeight: 'bold',
+    animation: 'pulse 2s infinite'
+  },
+  otherTurn: {
+    padding: '6px 12px',
+    backgroundColor: '#FF9800',
+    color: 'white',
+    borderRadius: '4px',
+    fontSize: '14px'
+  },
+  gameActions: {
+    display: 'flex',
+    gap: '10px'
+  },
+  leaveButton: {
+    padding: '8px 16px',
+    backgroundColor: '#F44336',
+    color: 'white',
+    border: 'none',
+    borderRadius: '4px',
+    cursor: 'pointer'
+  },
+  playersPanel: {
+    display: 'flex',
+    gap: '10px',
+    padding: '15px 20px',
+    backgroundColor: 'white',
+    borderBottom: '1px solid #e0e0e0',
+    overflowX: 'auto'
+  },
+  playerCard: {
+    display: 'flex',
+    alignItems: 'center',
+    padding: '10px 15px',
+    backgroundColor: '#f8f9fa',
+    borderRadius: '8px',
+    border: '2px solid transparent',
+    minWidth: '200px'
+  },
+  activePlayer: {
+    border: '2px solid #4CAF50',
+    backgroundColor: '#e8f5e8'
+  },
+  currentUser: {
+    border: '2px solid #2196F3',
+    backgroundColor: '#e3f2fd'
+  },
+  playerAvatar: {
+    width: '40px',
+    height: '40px',
+    borderRadius: '50%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    color: 'white',
+    fontSize: '16px',
+    fontWeight: 'bold',
+    marginRight: '12px'
+  },
+  playerInfo: {
+    flex: 1
+  },
+  playerName: {
+    fontSize: '14px',
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: '2px'
+  },
+  playerScore: {
+    fontSize: '12px',
+    color: '#666',
+    marginBottom: '2px'
+  },
+  playerMeeples: {
+    fontSize: '12px',
+    color: '#666'
+  },
+  turnIndicator: {
+    fontSize: '20px',
+    marginLeft: '10px'
+  },
+  currentTilePanel: {
+    padding: '15px 20px',
+    backgroundColor: '#e3f2fd',
+    borderBottom: '1px solid #e0e0e0'
+  },
+  currentTileInfo: {
+    textAlign: 'center'
+  },
+  meepleInstructions: {
+    padding: '15px 20px',
+    backgroundColor: '#fff3e0',
+    borderBottom: '1px solid #e0e0e0',
+    textAlign: 'center'
+  }
 };
 
 export default Game;
