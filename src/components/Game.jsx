@@ -37,17 +37,20 @@ const Game = () => {
   useEffect(() => {
     if (!gameState) return;
 
-    if (gamePhase === 'PLAYER_TURN') {
+    // Only show possible placements when in PLAYER_TURN and NOT in meeple placement mode
+    if (gamePhase === 'PLAYER_TURN' && !meeplePlacementMode) {
       const currentTileType = gameState.currentTile;
       const currentTile = TILES[currentTileType];
       const placements = findPossiblePlacements(gameState.board, currentTile);
       setPossiblePlacements(placements);
+    } else {
+      setPossiblePlacements([]);
     }
-  }, [gameState, gamePhase]);
+  }, [gameState, gamePhase, meeplePlacementMode]);
 
   // Handle empty tile click
   const handleEmptyTileClick = (x, y) => {
-    if (gamePhase !== 'PLAYER_TURN') return;
+    if (gamePhase !== 'PLAYER_TURN' || meeplePlacementMode) return;
 
     // Get valid rotations for this position
     const validRots = getValidRotations(gameState.board, x, y, TILES[gameState.currentTile]);
@@ -61,7 +64,7 @@ const Game = () => {
 
   // Handle selected tile click (for rotation)
   const handleSelectedTileClick = () => {
-    if (!selectedPosition || validRotations.length === 0) return;
+    if (!selectedPosition || validRotations.length === 0 || meeplePlacementMode) return;
 
     // Find next valid rotation
     const currentIndex = validRotations.indexOf(currentRotation);
@@ -71,7 +74,7 @@ const Game = () => {
 
   // Handle confirm placement - now enters meeple placement mode
   const handleConfirmPlacement = () => {
-    if (!selectedPosition || gamePhase !== 'PLAYER_TURN') return;
+    if (!selectedPosition || gamePhase !== 'PLAYER_TURN' || meeplePlacementMode) return;
 
     const currentTileType = gameState.currentTile;
     const newGameState = placeTile(gameState, selectedPosition.x, selectedPosition.y, currentTileType, currentRotation);
@@ -110,9 +113,11 @@ const Game = () => {
     // Place meeple if one is selected
     if (selectedMeepleSpot !== -1) {
       const { x, y } = lastPlacedTile;
-      finalGameState = placeMeeple(gameState, x, y, selectedMeepleSpot, 0); // Player ID is 0
-      setGameState(finalGameState);
+      finalGameState = placeMeeple(finalGameState, x, y, selectedMeepleSpot, 0); // Player ID is 0
     }
+    
+    // Update game state with the final state (with or without meeple)
+    setGameState(finalGameState);
     
     // Exit meeple placement mode
     setMeeplePlacementMode(false);
@@ -228,7 +233,7 @@ const Game = () => {
     }}>
       <Board 
         gameState={gameState}
-        possiblePlacements={gamePhase === 'PLAYER_TURN' ? possiblePlacements : []}
+        possiblePlacements={possiblePlacements}
         onEmptyTileClick={handleEmptyTileClick}
         onSelectedTileClick={handleSelectedTileClick}
         selectedPosition={selectedPosition}
