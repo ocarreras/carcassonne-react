@@ -57,11 +57,11 @@ const GameLobby = () => {
                     backgroundColor: getPlayerColor(player.id)
                   }}
                 >
-                  {player.name.charAt(0).toUpperCase()}
+                  {player.name ? player.name.charAt(0).toUpperCase() : '?'}
                 </div>
                 <div style={styles.playerInfo}>
                   <div style={styles.playerName}>
-                    {player.name}
+                    {player.name || 'Unknown Player'}
                     {player.id === state.playerId && ' (You)'}
                     {index === 0 && ' (Host)'}
                   </div>
