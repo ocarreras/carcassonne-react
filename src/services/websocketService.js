@@ -15,6 +15,7 @@ class WebSocketService {
     this.playerId = null;
     this.playerName = null;
     this.playerColor = null;
+    this.messageBuffer = ''; // Buffer for partial messages
   }
 
   // Add event listener
@@ -49,6 +50,71 @@ class WebSocketService {
     }
   }
 
+  // Parse incoming messages - handles multiple JSON objects and partial messages
+  parseMessages(rawData) {
+    console.log('Raw message data:', rawData); // Debug log
+    
+    // Add new data to buffer
+    this.messageBuffer += rawData;
+    
+    // Try to extract complete JSON messages
+    let startIndex = 0;
+    let braceCount = 0;
+    let inString = false;
+    let escapeNext = false;
+    
+    for (let i = 0; i < this.messageBuffer.length; i++) {
+      const char = this.messageBuffer[i];
+      
+      if (escapeNext) {
+        escapeNext = false;
+        continue;
+      }
+      
+      if (char === '\\') {
+        escapeNext = true;
+        continue;
+      }
+      
+      if (char === '"') {
+        inString = !inString;
+        continue;
+      }
+      
+      if (!inString) {
+        if (char === '{') {
+          braceCount++;
+        } else if (char === '}') {
+          braceCount--;
+          
+          // Found complete JSON object
+          if (braceCount === 0) {
+            const jsonStr = this.messageBuffer.substring(startIndex, i + 1);
+            try {
+              const message = JSON.parse(jsonStr);
+              this.handleMessage(message);
+            } catch (error) {
+              console.error('Error parsing JSON message:', error);
+              console.error('Problematic JSON:', jsonStr);
+            }
+            
+            // Move to next potential message
+            startIndex = i + 1;
+          }
+        }
+      }
+    }
+    
+    // Keep remaining incomplete data in buffer
+    this.messageBuffer = this.messageBuffer.substring(startIndex);
+    
+    // Clear buffer if it gets too large (prevent memory leaks)
+    if (this.messageBuffer.length > 10000) {
+      console.warn('Message buffer too large, clearing');
+      this.messageBuffer = '';
+    }
+  }
+
   // Connect to WebSocket server
   connect(playerId, playerName, playerColor = 'red') {
     if (this.connectionState === CONNECTION_STATES.CONNECTING || 
@@ -71,6 +137,7 @@ class WebSocketService {
           console.log('WebSocket connected');
           this.connectionState = CONNECTION_STATES.CONNECTED;
           this.reconnectAttempts = 0;
+          this.messageBuffer = ''; // Clear buffer on new connection
           this.emit('connectionStateChanged', this.connectionState);
           
           // Send authentication message
@@ -90,17 +157,13 @@ class WebSocketService {
         };
 
         this.ws.onmessage = (event) => {
-          try {
-            const message = JSON.parse(event.data);
-            this.handleMessage(message);
-          } catch (error) {
-            console.error('Error parsing message:', error);
-          }
+          this.parseMessages(event.data);
         };
 
         this.ws.onclose = (event) => {
           console.log('WebSocket closed:', event.code, event.reason);
           this.connectionState = CONNECTION_STATES.DISCONNECTED;
+          this.messageBuffer = ''; // Clear buffer on close
           this.emit('connectionStateChanged', this.connectionState);
           this.stopHeartbeat();
           
@@ -139,6 +202,7 @@ class WebSocketService {
     }
     
     this.connectionState = CONNECTION_STATES.DISCONNECTED;
+    this.messageBuffer = ''; // Clear buffer on disconnect
     this.emit('connectionStateChanged', this.connectionState);
   }
 
@@ -242,11 +306,14 @@ class WebSocketService {
         break;
         
       case MESSAGE_TYPES.ROOM_JOINED:
+      case 'ROOM_JOINED': // Handle server's actual message type
+        console.log('Room joined:', message.data);
         this.emit('roomJoined', message.data);
         break;
         
       case MESSAGE_TYPES.ROOM_UPDATE:
       case 'ROOM_STATE': // Handle server's actual message type
+        console.log('Room update:', message.data);
         this.emit('roomUpdate', message.data);
         break;
         
