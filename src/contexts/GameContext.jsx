@@ -165,7 +165,19 @@ export function GameProvider({ children }) {
     });
 
     // Connected successfully
-    websocketService.on('connected', () => {
+    websocketService.on('connected', (data) => {
+      console.log('Connected event data:', data); // Debug log
+      
+      // Update player ID with the server's actual player ID
+      if (data && data.playerId) {
+        console.log('Updating playerId from server:', data.playerId); // Debug log
+        dispatch({ type: ACTION_TYPES.SET_PLAYER_INFO, payload: { 
+          playerId: data.playerId,
+          playerName: state.playerName,
+          playerColor: state.playerColor
+        }});
+      }
+      
       dispatch({ type: ACTION_TYPES.SET_TOAST, payload: { 
         message: 'Connected to server', 
         type: 'success' 
@@ -283,7 +295,7 @@ export function GameProvider({ children }) {
       websocketService.off('gameState');
       websocketService.off('error');
     };
-  }, [state.isMyTurn]);
+  }, [state.isMyTurn, state.playerName, state.playerColor]);
 
   // Action creators
   const actions = {

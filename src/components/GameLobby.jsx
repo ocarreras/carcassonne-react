@@ -20,8 +20,17 @@ const GameLobby = () => {
   };
 
   const isRoomCreator = () => {
+    // Debug logging
+    console.log('isRoomCreator check:');
+    console.log('- state.playerId:', state.playerId);
+    console.log('- state.roomPlayers:', state.roomPlayers);
+    console.log('- first player:', state.roomPlayers[0]);
+    console.log('- first player playerId:', state.roomPlayers[0]?.playerId);
+    
     // Assume first player is room creator for now
-    return state.roomPlayers.length > 0 && state.roomPlayers[0].id === state.playerId;
+    const result = state.roomPlayers.length > 0 && state.roomPlayers[0].playerId === state.playerId;
+    console.log('- isRoomCreator result:', result);
+    return result;
   };
 
   const canStartGame = () => {
@@ -34,7 +43,7 @@ const GameLobby = () => {
 
   const getPlayerColor = (playerId) => {
     const colors = ['#FF5722', '#2196F3', '#4CAF50', '#FF9800', '#9C27B0'];
-    const playerIndex = state.roomPlayers.findIndex(p => p.id === playerId);
+    const playerIndex = state.roomPlayers.findIndex(p => p.playerId === playerId);
     return colors[playerIndex % colors.length];
   };
 
@@ -55,19 +64,19 @@ const GameLobby = () => {
           
           <div style={styles.playersList}>
             {state.roomPlayers.map((player, index) => (
-              <div key={player.id} style={styles.playerCard}>
+              <div key={player.playerId} style={styles.playerCard}>
                 <div 
                   style={{
                     ...styles.playerAvatar,
-                    backgroundColor: getPlayerColor(player.id)
+                    backgroundColor: getPlayerColor(player.playerId)
                   }}
                 >
-                  {player.name ? player.name.charAt(0).toUpperCase() : '?'}
+                  {player.playerName ? player.playerName.charAt(0).toUpperCase() : '?'}
                 </div>
                 <div style={styles.playerInfo}>
                   <div style={styles.playerName}>
-                    {player.name || 'Unknown Player'}
-                    {player.id === state.playerId && ' (You)'}
+                    {player.playerName || 'Unknown Player'}
+                    {player.playerId === state.playerId && ' (You)'}
                     {index === 0 && ' (Host)'}
                   </div>
                   <div style={styles.playerType}>
