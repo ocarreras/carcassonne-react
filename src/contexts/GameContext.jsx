@@ -21,6 +21,7 @@ const initialState = {
   currentRoom: null,
   rooms: [],
   roomPlayers: [],
+  maxPlayers: 4, // Default max players
   
   // Game state
   gameState: null,
@@ -48,6 +49,7 @@ const ACTION_TYPES = {
   SET_ROOMS: 'SET_ROOMS',
   SET_CURRENT_ROOM: 'SET_CURRENT_ROOM',
   SET_ROOM_PLAYERS: 'SET_ROOM_PLAYERS',
+  SET_MAX_PLAYERS: 'SET_MAX_PLAYERS',
   SET_GAME_STATE: 'SET_GAME_STATE',
   SET_CURRENT_PLAYER: 'SET_CURRENT_PLAYER',
   SET_CURRENT_TILE: 'SET_CURRENT_TILE',
@@ -88,6 +90,9 @@ function gameReducer(state, action) {
       
     case ACTION_TYPES.SET_ROOM_PLAYERS:
       return { ...state, roomPlayers: action.payload };
+      
+    case ACTION_TYPES.SET_MAX_PLAYERS:
+      return { ...state, maxPlayers: action.payload };
       
     case ACTION_TYPES.SET_GAME_STATE:
       return { ...state, gameState: action.payload };
@@ -174,18 +179,31 @@ export function GameProvider({ children }) {
 
     // Room joined
     websocketService.on('roomJoined', (data) => {
+      console.log('Room joined data:', data); // Debug log
       dispatch({ type: ACTION_TYPES.SET_CURRENT_ROOM, payload: data.roomId });
       dispatch({ type: ACTION_TYPES.SET_ROOM_PLAYERS, payload: data.players });
       dispatch({ type: ACTION_TYPES.SET_GAME_PHASE, payload: GAME_PHASES.WAITING });
+      
+      // Set max players if provided in the room data
+      if (data.maxPlayers) {
+        dispatch({ type: ACTION_TYPES.SET_MAX_PLAYERS, payload: data.maxPlayers });
+      }
     });
 
     // Room updated
     websocketService.on('roomUpdate', (data) => {
+      console.log('Room update data:', data); // Debug log
       dispatch({ type: ACTION_TYPES.SET_ROOM_PLAYERS, payload: data.players });
+      
+      // Update max players if provided
+      if (data.maxPlayers) {
+        dispatch({ type: ACTION_TYPES.SET_MAX_PLAYERS, payload: data.maxPlayers });
+      }
     });
 
     // Game started
     websocketService.on('gameStart', (data) => {
+      console.log('Game start event received:', data); // Debug log
       dispatch({ type: ACTION_TYPES.SET_GAME_PHASE, payload: GAME_PHASES.PLAYING });
       dispatch({ type: ACTION_TYPES.SET_ROOM_PLAYERS, payload: data.players });
     });
@@ -286,6 +304,8 @@ export function GameProvider({ children }) {
     },
 
     createRoom: (roomName, maxPlayers) => {
+      // Store the maxPlayers when creating a room
+      dispatch({ type: ACTION_TYPES.SET_MAX_PLAYERS, payload: maxPlayers });
       websocketService.createRoom(roomName, maxPlayers);
     },
 
@@ -303,6 +323,11 @@ export function GameProvider({ children }) {
 
     addBot: (botName, difficulty) => {
       websocketService.addBot(botName, difficulty);
+    },
+
+    startGame: () => {
+      console.log('Starting game action called'); // Debug log
+      websocketService.startGame();
     },
 
     // Game actions

@@ -251,6 +251,8 @@ class WebSocketService {
         break;
         
       case MESSAGE_TYPES.GAME_START:
+      case 'GAME_STARTED': // Handle server's actual message type from PROTOCOL.md
+        console.log('Game starting:', message.data);
         this.emit('gameStart', message.data);
         break;
         
@@ -321,6 +323,11 @@ class WebSocketService {
       botName,
       difficulty
     });
+  }
+
+  startGame() {
+    console.log('Sending start game message'); // Debug log
+    return this.sendMessage(MESSAGE_TYPES.GAME_START, {});
   }
 
   // Game action methods

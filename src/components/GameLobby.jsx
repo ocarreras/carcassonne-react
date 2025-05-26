@@ -14,6 +14,11 @@ const GameLobby = () => {
     actions.leaveRoom();
   };
 
+  const handleStartGame = () => {
+    console.log('Starting game...'); // Debug log
+    actions.startGame();
+  };
+
   const isRoomCreator = () => {
     // Assume first player is room creator for now
     return state.roomPlayers.length > 0 && state.roomPlayers[0].id === state.playerId;
@@ -24,7 +29,7 @@ const GameLobby = () => {
   };
 
   const canAddBot = () => {
-    return state.roomPlayers.length < 5 && isRoomCreator();
+    return state.roomPlayers.length < state.maxPlayers && isRoomCreator();
   };
 
   const getPlayerColor = (playerId) => {
@@ -45,7 +50,7 @@ const GameLobby = () => {
       <div style={styles.content}>
         <div style={styles.playersSection}>
           <h2 style={styles.sectionTitle}>
-            Players ({state.roomPlayers.length}/5)
+            Players ({state.roomPlayers.length}/{state.maxPlayers})
           </h2>
           
           <div style={styles.playersList}>
@@ -75,8 +80,8 @@ const GameLobby = () => {
               </div>
             ))}
             
-            {/* Empty slots */}
-            {Array.from({ length: 5 - state.roomPlayers.length }, (_, index) => (
+            {/* Empty slots - now dynamic based on maxPlayers */}
+            {Array.from({ length: state.maxPlayers - state.roomPlayers.length }, (_, index) => (
               <div key={`empty-${index}`} style={styles.emptySlot}>
                 <div style={styles.emptyAvatar}>?</div>
                 <div style={styles.emptyText}>Waiting for player...</div>
@@ -102,7 +107,7 @@ const GameLobby = () => {
               </button>
 
               <button
-                onClick={() => {/* TODO: Start game */}}
+                onClick={handleStartGame}
                 disabled={!canStartGame()}
                 style={{
                   ...styles.startGameButton,
@@ -121,6 +126,9 @@ const GameLobby = () => {
                 </p>
                 <p style={styles.infoText}>
                   • Game will start immediately when you click "Start Game"
+                </p>
+                <p style={styles.infoText}>
+                  • Room size: {state.maxPlayers} players maximum
                 </p>
               </div>
             </div>
