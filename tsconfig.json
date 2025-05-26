@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "useDefineForClassFields": true,
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "skipLibCheck": true,
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "esModuleInterop": true,
+    // "types": ["vite/client", "@types/react"], // Removed to rely on vite-env.d.ts and @types/react auto-inclusion
+    "jsxImportSource": "react"
+  },
+  "include": ["src", "vite.config.ts", "eslint.config.js", "src/vite-env.d.ts"], // Explicitly include vite-env.d.ts
+  "references": [{ "path": "./tsconfig.node.json" }]
+}
