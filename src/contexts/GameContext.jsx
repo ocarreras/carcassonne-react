@@ -310,6 +310,12 @@ export function GameProvider({ children }) {
     },
 
     joinRoom: (roomId) => {
+      // Find the room in the rooms list to get maxPlayers
+      const room = state.rooms.find(r => r.roomId === roomId);
+      if (room && room.maxPlayers) {
+        console.log(`Setting maxPlayers to ${room.maxPlayers} for room ${roomId}`); // Debug log
+        dispatch({ type: ACTION_TYPES.SET_MAX_PLAYERS, payload: room.maxPlayers });
+      }
       websocketService.joinRoom(roomId);
     },
 
