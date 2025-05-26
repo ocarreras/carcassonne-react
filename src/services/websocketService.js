@@ -189,6 +189,7 @@ class WebSocketService {
   // Send message to server
   sendMessage(type, data = {}) {
     const message = createMessage(type, data);
+    console.log('Sending message:', message); // Debug log
     
     if (this.connectionState === CONNECTION_STATES.CONNECTED && this.ws) {
       try {
@@ -232,7 +233,12 @@ class WebSocketService {
         break;
         
       case MESSAGE_TYPES.ROOMS_LIST:
-        this.emit('roomsList', message.data.rooms);
+      case 'LIST_ROOMS': // Handle server's actual message type
+        console.log('Processing rooms list:', message.data);
+        // Handle different possible data structures
+        const rooms = message.data?.rooms || message.data || [];
+        console.log('Extracted rooms:', rooms);
+        this.emit('roomsList', rooms);
         break;
         
       case MESSAGE_TYPES.ROOM_JOINED:
@@ -240,6 +246,7 @@ class WebSocketService {
         break;
         
       case MESSAGE_TYPES.ROOM_UPDATE:
+      case 'ROOM_STATE': // Handle server's actual message type
         this.emit('roomUpdate', message.data);
         break;
         
@@ -297,6 +304,7 @@ class WebSocketService {
   }
 
   joinRoom(roomId) {
+    console.log('Joining room with ID:', roomId); // Debug log
     return this.sendMessage(MESSAGE_TYPES.JOIN_ROOM, {
       roomId
     });

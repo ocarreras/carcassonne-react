@@ -51,7 +51,38 @@ const RoomLobby = () => {
   };
 
   const handleJoinRoom = (roomId) => {
+    console.log('Attempting to join room with ID:', roomId); // Debug log
     actions.joinRoom(roomId);
+  };
+
+  // Helper function to get room ID from different possible property names
+  const getRoomId = (room) => {
+    return room.id || room.roomId || room.RoomID || room.ID || '';
+  };
+
+  // Helper function to get room name with fallback
+  const getRoomName = (room) => {
+    return room.name || room.roomName || room.RoomName || 'Unnamed Room';
+  };
+
+  // Helper function to get player count with fallback
+  const getPlayerCount = (room) => {
+    return room.playerCount || room.currentPlayers || room.players?.length || 0;
+  };
+
+  // Helper function to get max players with fallback
+  const getMaxPlayers = (room) => {
+    return room.maxPlayers || room.MaxPlayers || 4;
+  };
+
+  // Helper function to get created by with fallback
+  const getCreatedBy = (room) => {
+    return room.createdBy || room.creator || room.host || 'Unknown';
+  };
+
+  // Helper function to check if game started
+  const isGameStarted = (room) => {
+    return room.gameStarted || room.status === 'playing' || room.status === 'in_progress';
   };
 
   const getConnectionStatusText = () => {
@@ -82,6 +113,18 @@ const RoomLobby = () => {
         return '#9E9E9E';
     }
   };
+
+  // Debug log for rooms
+  useEffect(() => {
+    if (state.rooms.length > 0) {
+      console.log('Current rooms data:', state.rooms);
+      state.rooms.forEach((room, index) => {
+        console.log(`Room ${index}:`, room);
+        console.log(`Room ${index} ID:`, getRoomId(room));
+        console.log(`Room ${index} Name:`, getRoomName(room));
+      });
+    }
+  }, [state.rooms]);
 
   // Show connection screen if not connected
   if (state.connectionState !== CONNECTION_STATES.CONNECTED) {
@@ -162,36 +205,50 @@ const RoomLobby = () => {
             <p>Create a new room to start playing!</p>
           </div>
         ) : (
-          state.rooms.map((room) => (
-            <div key={room.id} style={styles.roomCard}>
-              <div style={styles.roomInfo}>
-                <h3 style={styles.roomName}>{room.name}</h3>
-                <p style={styles.roomDetails}>
-                  Players: {room.playerCount}/{room.maxPlayers}
-                </p>
-                <p style={styles.roomDetails}>
-                  Created by: {room.createdBy}
-                </p>
-                <p style={styles.roomStatus}>
-                  Status: {room.gameStarted ? 'In Progress' : 'Waiting'}
-                </p>
+          state.rooms.map((room, index) => {
+            const roomId = getRoomId(room);
+            const roomName = getRoomName(room);
+            const playerCount = getPlayerCount(room);
+            const maxPlayers = getMaxPlayers(room);
+            const createdBy = getCreatedBy(room);
+            const gameStarted = isGameStarted(room);
+            
+            return (
+              <div key={roomId || index} style={styles.roomCard}>
+                <div style={styles.roomInfo}>
+                  <h3 style={styles.roomName}>{roomName}</h3>
+                  <p style={styles.roomDetails}>
+                    Players: {playerCount}/{maxPlayers}
+                  </p>
+                  <p style={styles.roomDetails}>
+                    Created by: {createdBy}
+                  </p>
+                  <p style={styles.roomStatus}>
+                    Status: {gameStarted ? 'In Progress' : 'Waiting'}
+                  </p>
+                  {/* Debug info */}
+                  <p style={styles.debugInfo}>
+                    Room ID: {roomId || 'undefined'}
+                  </p>
+                </div>
+                <div style={styles.roomActions}>
+                  <button
+                    onClick={() => handleJoinRoom(roomId)}
+                    disabled={playerCount >= maxPlayers || gameStarted || !roomId}
+                    style={{
+                      ...styles.joinButton,
+                      ...(playerCount >= maxPlayers || gameStarted || !roomId
+                        ? styles.disabledButton : {})
+                    }}
+                  >
+                    {!roomId ? 'No ID' :
+                     gameStarted ? 'In Progress' : 
+                     playerCount >= maxPlayers ? 'Full' : 'Join'}
+                  </button>
+                </div>
               </div>
-              <div style={styles.roomActions}>
-                <button
-                  onClick={() => handleJoinRoom(room.id)}
-                  disabled={room.playerCount >= room.maxPlayers || room.gameStarted}
-                  style={{
-                    ...styles.joinButton,
-                    ...(room.playerCount >= room.maxPlayers || room.gameStarted 
-                      ? styles.disabledButton : {})
-                  }}
-                >
-                  {room.gameStarted ? 'In Progress' : 
-                   room.playerCount >= room.maxPlayers ? 'Full' : 'Join'}
-                </button>
-              </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
 
@@ -392,6 +449,12 @@ const styles = {
     margin: '4px 0',
     fontSize: '14px',
     fontWeight: 'bold'
+  },
+  debugInfo: {
+    margin: '4px 0',
+    color: '#999',
+    fontSize: '12px',
+    fontStyle: 'italic'
   },
   roomActions: {
     marginLeft: '20px'
